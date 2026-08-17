@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AuthPanel from "../auth-panel";
+import PageTitle from "../page-title";
 
 export const metadata: Metadata = {
   title: "アカウント - Hikamani Coin (HMC)",
@@ -9,11 +10,11 @@ export const metadata: Metadata = {
 export default function AccountPage() {
   return (
     <main className="mx-auto max-w-xl px-4 py-8">
-      <h1 className="text-2xl font-bold">👤 ヒカマニコインウォレット(アカウント)</h1>
+      <PageTitle textKey="account" />
       <p className="mt-1 mb-6 text-sm text-zinc-400">
         16桁のアカウント番号で完結。メールもパスワードも不要
       </p>
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-900/40 p-5">
         <AuthPanel />
       </div>
       <p className="mt-4 text-xs text-zinc-600">

@@ -24,14 +24,14 @@ export default function AuthBar() {
           <button
             onClick={() => setShowNum(!showNum)}
             title={showNum ? "番号を隠す" : "番号を表示"}
-            className="rounded-lg border border-zinc-700 px-1.5 py-0.5 text-xs hover:bg-zinc-800"
+            className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-1.5 py-0.5 text-xs hover:bg-zinc-200 dark:bg-zinc-800"
           >
             {showNum ? "🙈" : "👁"}
           </button>
           <span className="text-xs text-amber-300"><b>{session.pending.toLocaleString()} HMC</b></span>
           <button
-            onClick={logout}
-            className="rounded-lg border border-zinc-700 px-2 py-1 text-xs hover:bg-zinc-800"
+            onClick={() => { if (confirm("ログアウトしますか?")) logout(); }}
+            className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs hover:bg-zinc-200 dark:bg-zinc-800"
           >
             ログアウト
           </button>

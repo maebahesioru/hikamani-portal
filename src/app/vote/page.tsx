@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import BetPanel from "../bet-panel";
+import PageTitle from "../page-title";
 
 export const metadata: Metadata = {
   title: "予想投票 - Hikamani Coin (HMC)",
@@ -9,11 +10,11 @@ export const metadata: Metadata = {
 export default function VotePage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-2xl font-bold">🗳 予想投票</h1>
+      <PageTitle textKey="vote" />
       <p className="mt-1 mb-6 text-sm text-zinc-400">
         界隈で起こることを予想して <b className="text-sky-300">50 HMC</b> で投票(配当は結果確定時)
       </p>
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-900/40 p-5">
         <BetPanel />
       </div>
       <p className="mt-4 text-xs text-zinc-600">

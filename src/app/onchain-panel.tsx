@@ -31,7 +31,7 @@ export default function OnchainPanel() {
     <div className="space-y-1">
       {Object.entries(data.wallets).map(([name, w]) => (
         <div key={name} className="flex items-center justify-between text-xs">
-          <span className="text-zinc-400">{labels[name] || name}</span>
+          <span className="text-zinc-600 dark:text-zinc-400">{labels[name] || name}</span>
           <span className="font-mono">
             {w.balance !== null ? `${w.balance.toLocaleString()} HMC` : "ATA未作成"}
           </span>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import BaccaratPanel from "../baccarat-panel";
+import PageTitle from "../page-title";
 
 export const metadata: Metadata = {
   title: "バカラ - Hikamani Coin (HMC)",
@@ -9,11 +10,11 @@ export const metadata: Metadata = {
 export default function BaccaratPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-2xl font-bold">🃏 バカラ</h1>
+      <PageTitle textKey="baccarat" />
       <p className="mt-1 mb-6 text-sm text-zinc-400">
         プレイヤー / バンカー / タイの3択。換金なしのゲーム内ポイント
       </p>
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-900/40 p-5">
         <BaccaratPanel />
       </div>
       <p className="mt-4 text-xs text-zinc-600">

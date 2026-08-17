@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useLang } from "@/lib/lang-context";
 
 interface Topic {
   id: string;
@@ -14,6 +15,7 @@ interface Topic {
 
 export default function BetPanel() {
   const { session, authFetch, refresh } = useAuth();
+  const { t } = useLang();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -51,14 +53,14 @@ export default function BetPanel() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-zinc-400">
-        界隈で起こることを予想して <b className="text-sky-300">50 HMC</b> で投票(配当は結果確定時)
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        {t("vote_desc")}
       </p>
       {topics.map((t) => (
-        <div key={t.id} className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+        <div key={t.id} className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100/80 dark:bg-zinc-900/60 p-4">
           <div className="flex items-center justify-between">
             <p className="font-semibold">{t.title}</p>
-            <span className={`text-xs ${t.status === "open" ? "text-emerald-400" : "text-zinc-500"}`}>
+            <span className={`text-xs ${t.status === "open" ? "text-emerald-400" : "text-zinc-600 dark:text-zinc-500"}`}>
               {t.status === "open" ? "受付中" : `確定: ${t.winner}`}
             </span>
           </div>
@@ -71,11 +73,11 @@ export default function BetPanel() {
                 className={`rounded-lg px-3 py-1.5 text-sm border ${
                   selected[t.id] === o
                     ? "border-sky-500 bg-sky-900/50 text-sky-300"
-                    : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40"
+                    : "border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 disabled:opacity-40"
                 }`}
               >
                 {o}
-                <span className="ml-2 text-xs text-zinc-500">{t.counts[o] || 0} HMC</span>
+                <span className="ml-2 text-xs text-zinc-600 dark:text-zinc-500">{t.counts[o] || 0} HMC</span>
               </button>
             ))}
           </div>
@@ -88,7 +90,7 @@ export default function BetPanel() {
               {loading ? "投票中..." : "投票する(50 HMC)"}
             </button>
           )}
-          <p className="mt-2 text-xs text-zinc-500">総ベット: {t.totalBets} HMC</p>
+          <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-500">総ベット: {t.totalBets} HMC</p>
         </div>
       ))}
       {msg && (

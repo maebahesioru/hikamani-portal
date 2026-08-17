@@ -21,6 +21,38 @@ export default function AuthPanel() {
   const [exported, setExported] = useState<{ warning: string; privateKeyJson: string } | null>(null);
   const [expMsg, setExpMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [toInput, setToInput] = useState("");
+  const [amountInput, setAmountInput] = useState("");
+  const [txMsg, setTxMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [transferring, setTransferring] = useState(false);
+
+  async function doTransfer() {
+    const to = toInput.replace(/\s/g, "");
+    const amount = Math.floor(Number(amountInput) || 0);
+    if (!session) return;
+    if (!/^\d{16}$/.test(to)) { setTxMsg({ ok: false, text: "送金先は16桁のアカウント番号です" }); return; }
+    if (amount < 1) { setTxMsg({ ok: false, text: "送金額を入力してください(1 HMC以上)" }); return; }
+    if (!confirm(`${amount} HMC を ${to.slice(0,4)} ${to.slice(4,8)} ${to.slice(8,12)} ${to.slice(12)} に送金しますか?`)) return;
+    setTransferring(true);
+    try {
+      const r = await fetch("/api/transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", authorization: `Bearer ${session.token}` },
+        body: JSON.stringify({ to, amount }),
+      });
+      const j = await r.json();
+      if (r.ok) {
+        setTxMsg({ ok: true, text: `${amount} HMC 送金完了! 残り ${j.pending} HMC` });
+        setToInput(""); setAmountInput("");
+        await refresh();
+      } else {
+        setTxMsg({ ok: false, text: j.error || "送金に失敗しました" });
+      }
+    } catch {
+      setTxMsg({ ok: false, text: "通信エラー" });
+    }
+    setTransferring(false);
+  }
 
   async function doCreate() {
     setLoading(true);
@@ -76,30 +108,30 @@ export default function AuthPanel() {
       <div className="space-y-3">
         <div className="rounded-lg border border-emerald-900 bg-emerald-950/30 p-3 text-sm">
           <div className="flex items-center justify-between">
-            <p className="text-zinc-400">ログイン中: <b className="text-emerald-400 font-mono">{showNum ? formatNum(session.accountNumber) : maskNum(session.accountNumber)}</b></p>
+            <p className="text-zinc-600 dark:text-zinc-400">ログイン中: <b className="text-emerald-400 font-mono">{showNum ? formatNum(session.accountNumber) : maskNum(session.accountNumber)}</b></p>
             <button
               onClick={() => setShowNum(!showNum)}
-              className="rounded-lg border border-zinc-700 px-2 py-1 text-xs hover:bg-zinc-800"
+              className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs hover:bg-zinc-200 dark:bg-zinc-800"
             >
               {showNum ? "🙈 番号を隠す" : "👁 番号を表示"}
             </button>
           </div>
           <p className="mt-1 text-[10px] text-zinc-600">アカウント番号はパスワードと同じです。画面共有やスクリーンショットに注意してください。</p>
         </div>
-        <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-3 text-sm">
-          <p className="text-zinc-400">あなたのHMC残高</p>
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 p-3 text-sm">
+          <p className="text-zinc-600 dark:text-zinc-400">あなたのHMC残高</p>
           <p className="mt-1 text-2xl font-bold text-amber-300">{session.pending.toLocaleString()} HMC</p>
-          <p className="mt-1 text-xs text-zinc-500">(未送金: {session.pending.toLocaleString()} / 送金済み: {session.sent.toLocaleString()})</p>
+          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-500">(未送金: {session.pending.toLocaleString()} / 送金済み: {session.sent.toLocaleString()})</p>
         </div>
-        <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-3 text-sm">
-          <p className="text-zinc-400">あなたの受け取りアドレス(将来のチェーン送金先)</p>
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 p-3 text-sm">
+          <p className="text-zinc-600 dark:text-zinc-400">あなたの受け取りアドレス(将来のチェーン送金先)</p>
           <p className="mt-1 font-mono text-xs text-sky-300 break-all">{session.solanaAddress}</p>
         </div>
 
         {/* 秘密鍵エクスポート */}
-        <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
-          <p className="mb-2 text-sm font-semibold text-zinc-300">🔑 秘密鍵のエクスポート</p>
-          <p className="mb-2 text-xs text-zinc-500">
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 p-3">
+          <p className="mb-2 text-sm font-semibold text-zinc-800 dark:text-zinc-300">🔑 秘密鍵のエクスポート</p>
+          <p className="mb-2 text-xs text-zinc-600 dark:text-zinc-500">
             アカウント番号を入力すると、このウォレットの秘密鍵を取り出せます(Phantom等へのインポート用)。<b className="text-red-400">絶対に他人に見せないでください。</b>
           </p>
           <input
@@ -107,7 +139,7 @@ export default function AuthPanel() {
             onChange={(e) => setExpInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && doExport()}
             placeholder="16桁のアカウント番号"
-            className="mb-2 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-amber-500"
+            className="mb-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-amber-500"
           />
           <button
             onClick={doExport}
@@ -127,7 +159,7 @@ export default function AuthPanel() {
               />
               <button
                 onClick={() => navigator.clipboard.writeText(exported.privateKeyJson)}
-                className="rounded-lg border border-zinc-700 px-3 py-1 text-xs hover:bg-zinc-800"
+                className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-xs hover:bg-zinc-200 dark:bg-zinc-800"
               >
                 コピーする
               </button>
@@ -136,7 +168,37 @@ export default function AuthPanel() {
           {expMsg && <p className={`mt-2 text-xs ${expMsg.ok ? "text-emerald-400" : "text-red-400"}`}>{expMsg.text}</p>}
         </div>
 
-        <button onClick={logout} className="rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800">
+        {/* 送金 */}
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 p-3">
+          <p className="mb-2 text-sm font-semibold text-zinc-800 dark:text-zinc-300">💸 HMCを送金</p>
+          <p className="mb-2 text-xs text-zinc-600 dark:text-zinc-500">サイト内のアカウント番号(16桁)にポイントを送れます。チェーン送金は運営が定期的に実施します。</p>
+          <input
+            value={toInput}
+            onChange={(e) => setToInput(e.target.value)}
+            placeholder="送金先の16桁のアカウント番号"
+            className="mb-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
+          />
+          <div className="flex gap-2">
+            <input
+              type="number"
+              min={1}
+              value={amountInput}
+              onChange={(e) => setAmountInput(e.target.value)}
+              placeholder="数量(HMC)"
+              className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
+            />
+            <button
+              onClick={doTransfer}
+              disabled={transferring}
+              className="rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold hover:bg-sky-600 disabled:opacity-50"
+            >
+              {transferring ? "送金中..." : "送金"}
+            </button>
+          </div>
+          {txMsg && <p className={`mt-2 text-xs ${txMsg.ok ? "text-emerald-400" : "text-red-400"}`}>{txMsg.text}</p>}
+        </div>
+
+        <button onClick={() => { if (confirm("ログアウトしますか?")) logout(); }} className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-200 dark:bg-zinc-800">
           ログアウト
         </button>
       </div>
@@ -148,7 +210,7 @@ export default function AuthPanel() {
       {/* 新規発行 */}
       <div className="rounded-lg border border-sky-900 bg-sky-950/20 p-4">
         <p className="mb-2 text-sm font-semibold text-sky-300">🆕 アカウント番号を発行する</p>
-        <p className="mb-3 text-xs text-zinc-500">
+        <p className="mb-3 text-xs text-zinc-600 dark:text-zinc-500">
           メールもパスワードも不要。ボタン1つで16桁の番号が発行されます(登録でエアドロップ1,000 HMCの対象)
         </p>
         <button
@@ -164,7 +226,7 @@ export default function AuthPanel() {
             <p className="mt-2 text-center font-mono text-2xl font-bold tracking-wider text-amber-300">{formatNum(newAccount)}</p>
             <button
               onClick={() => navigator.clipboard.writeText(newAccount)}
-              className="mt-2 w-full rounded-lg border border-zinc-700 px-3 py-1.5 text-xs hover:bg-zinc-800"
+              className="mt-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-xs hover:bg-zinc-200 dark:bg-zinc-800"
             >
               番号をコピー
             </button>
@@ -173,14 +235,14 @@ export default function AuthPanel() {
       </div>
 
       {/* ログイン */}
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+      <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100/80 dark:bg-zinc-900/60 p-4">
         <p className="mb-2 text-sm font-semibold">🔓 アカウント番号でログイン</p>
         <input
           value={inputNum}
           onChange={(e) => setInputNum(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && doLogin()}
           placeholder="1234 5678 9012 3456"
-          className="mb-2 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
+          className="mb-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
         />
         <button
           onClick={doLogin}

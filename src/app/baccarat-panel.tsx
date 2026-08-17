@@ -1,11 +1,13 @@
 "use client";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useLang } from "@/lib/lang-context";
 
 const MIN_BET = 50;
 
 export default function BaccaratPanel() {
   const { session, authFetch, refresh } = useAuth();
+  const { t } = useLang();
   const [bet, setBet] = useState<"player" | "banker" | "tie">("player");
   const [amount, setAmount] = useState(MIN_BET);
   const [result, setResult] = useState<{ win: boolean; result: string; payout: number; pending: number } | null>(null);
@@ -40,8 +42,8 @@ export default function BaccaratPanel() {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-zinc-400">
-        バカラ(簡易版)。<b className="text-fuchsia-300">{MIN_BET} HMC</b> からベット。換金なしのゲーム内ポイント
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        {t("baccarat_desc")}
       </p>
       <div className="flex flex-wrap gap-2">
         {(["player", "banker", "tie"] as const).map((b) => (
@@ -49,7 +51,7 @@ export default function BaccaratPanel() {
             key={b}
             onClick={() => setBet(b)}
             className={`rounded-lg px-3 py-1.5 text-sm border ${
-              bet === b ? "border-fuchsia-500 bg-fuchsia-900/50 text-fuchsia-300" : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700"
+              bet === b ? "border-fuchsia-500 bg-fuchsia-900/50 text-fuchsia-300" : "border-zinc-300 dark:border-zinc-700 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700"
             }`}
           >
             {labels[b]}
@@ -57,16 +59,16 @@ export default function BaccaratPanel() {
         ))}
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-sm text-zinc-400">ベット額:</span>
+        <span className="text-sm text-zinc-600 dark:text-zinc-400">ベット額:</span>
         <input
           type="number"
           min={MIN_BET}
           step={10}
           value={amount}
           onChange={(e) => setAmount(Math.max(MIN_BET, Math.floor(Number(e.target.value) || MIN_BET)))}
-          className="w-28 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm outline-none focus:border-fuchsia-500"
+          className="w-28 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 text-sm outline-none focus:border-fuchsia-500"
         />
-        <span className="text-sm text-zinc-500">HMC</span>
+        <span className="text-sm text-zinc-600 dark:text-zinc-500">HMC</span>
       </div>
       <button
         onClick={play}
@@ -76,11 +78,11 @@ export default function BaccaratPanel() {
         {loading ? "プレイ中..." : "ベットする"}
       </button>
       {result && (
-        <div className="rounded-lg bg-zinc-800/60 p-3 text-sm">
-          <p className={result.win ? "text-amber-300 font-bold" : "text-zinc-500"}>
+        <div className="rounded-lg bg-zinc-200 dark:bg-zinc-800/60 p-3 text-sm">
+          <p className={result.win ? "text-amber-300 font-bold" : "text-zinc-600 dark:text-zinc-500"}>
             結果: {labels[result.result]} {result.win ? `→ +${result.payout} HMC 🎉` : "→ はずれ"}
           </p>
-          <p className="mt-1 text-zinc-400">現在のポイント: {result.pending} HMC</p>
+          <p className="mt-1 text-zinc-600 dark:text-zinc-400">現在のポイント: {result.pending} HMC</p>
         </div>
       )}
       {msg && (

@@ -1,10 +1,12 @@
 "use client";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useLang } from "@/lib/lang-context";
 import { GAME } from "@/lib/hmc";
 
 export default function BonusPanel() {
   const { session, authFetch, refresh } = useAuth();
+  const { t } = useLang();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -28,15 +30,15 @@ export default function BonusPanel() {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-zinc-400">
-        毎日1回 <b className="text-emerald-300">+{GAME.bonusPerDay} HMC</b> を獲得
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        {t("bonus_desc")}
       </p>
       <button
         onClick={claim}
         disabled={loading}
         className="w-full rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold hover:bg-emerald-600 disabled:opacity-50"
       >
-        {loading ? "受け取り中..." : "今日のボーナスを受け取る"}
+        {loading ? "..." : t("bonus_claim")}
       </button>
       {msg && (
         <p className={`text-sm ${msg.ok ? "text-emerald-400" : "text-red-400"}`}>{msg.text}</p>
