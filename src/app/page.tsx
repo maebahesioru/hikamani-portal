@@ -50,6 +50,16 @@ export default function Home() {
           </Panel>
         </div>
 
+        {/* 予想投票 + バカラ */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <Panel title="🗳 予想投票(1票 50 HMC)">
+            <BetPanel />
+          </Panel>
+          <Panel title="🃏 バカラ(最低 50 HMC)">
+            <BaccaratPanel />
+          </Panel>
+        </div>
+
         {/* ポイント残高 */}
         <Panel title="💰 ポイント残高(未送金HMC)">
           <PointsPanel />
@@ -132,6 +142,8 @@ import WalletPanel from "./wallet-panel";
 import BonusPanel from "./bonus-panel";
 import LotteryPanel from "./lottery-panel";
 import PointsPanel from "./points-panel";
+import BetPanel from "./bet-panel";
+import BaccaratPanel from "./baccarat-panel";
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
