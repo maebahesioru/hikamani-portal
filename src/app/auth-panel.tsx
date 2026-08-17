@@ -2,34 +2,61 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 
+function formatNum(n: string): string {
+  return n.replace(/(\d{4})(?=\d)/g, "$1 ");
+}
+
 export default function AuthPanel() {
-  const { session, login, register, logout, refresh } = useAuth();
-  const [mode, setMode] = useState<"login" | "register">("register");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [password2, setPassword2] = useState("");
+  const { session, createAccount, login, logout, refresh } = useAuth();
+  const [inputNum, setInputNum] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [expPassword, setExpPassword] = useState("");
+  const [newAccount, setNewAccount] = useState<string | null>(null);
+  const [expInput, setExpInput] = useState("");
   const [exported, setExported] = useState<{ warning: string; privateKeyJson: string } | null>(null);
   const [expMsg, setExpMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [exporting, setExporting] = useState(false);
 
+  async function doCreate() {
+    setLoading(true);
+    setNewAccount(null);
+    const res = await createAccount();
+    if (res.error) { setMsg({ ok: false, text: res.error }); }
+    else {
+      setMsg({ ok: true, text: "アカウント発行完了! エアドロップ1,000 HMCの対象になりました" });
+      setNewAccount(res.accountNumber);
+      await refresh();
+    }
+    setLoading(false);
+  }
+
+  async function doLogin() {
+    const num = inputNum.replace(/\s/g, "");
+    if (!/^\d{16}$/.test(num)) { setMsg({ ok: false, text: "16桁の数字を入力してください" }); return; }
+    setLoading(true);
+    const err = await login(num);
+    if (err) setMsg({ ok: false, text: err });
+    else { setMsg({ ok: true, text: "ログインしました" }); setInputNum(""); await refresh(); }
+    setLoading(false);
+  }
+
   async function doExport() {
-    if (!expPassword) { setExpMsg({ ok: false, text: "パスワードを入力してください" }); return; }
+    const num = expInput.replace(/\s/g, "");
+    if (!session) return;
+    if (!/^\d{16}$/.test(num)) { setExpMsg({ ok: false, text: "16桁のアカウント番号を入力してください" }); return; }
     setExporting(true);
     setExported(null);
     try {
       const r = await fetch("/api/wallet/export", {
         method: "POST",
-        headers: { "Content-Type": "application/json", authorization: `Bearer ${session?.token}` },
-        body: JSON.stringify({ password: expPassword }),
+        headers: { "Content-Type": "application/json", authorization: `Bearer ${session.token}` },
+        body: JSON.stringify({ accountNumber: num }),
       });
       const j = await r.json();
       if (r.ok) {
         setExported({ warning: j.warning, privateKeyJson: j.privateKeyJson });
         setExpMsg({ ok: true, text: "復号成功" });
-        setExpPassword("");
+        setExpInput("");
       } else {
         setExpMsg({ ok: false, text: j.error || "エクスポートに失敗しました" });
       }
@@ -39,31 +66,16 @@ export default function AuthPanel() {
     setExporting(false);
   }
 
-  async function submit() {
-    const name = username.trim();
-    if (!name || !password) { setMsg({ ok: false, text: "ユーザー名とパスワードを入力してください" }); return; }
-    if (mode === "register" && password !== password2) { setMsg({ ok: false, text: "パスワードが一致しません" }); return; }
-    setLoading(true);
-    const err = mode === "register" ? await register(name, password) : await login(name, password);
-    if (err) { setMsg({ ok: false, text: err }); }
-    else {
-      setMsg({ ok: true, text: mode === "register" ? "🎉 アカウント作成完了! エアドロップ1,000 HMCの対象になりました" : "ログインしました" });
-      setUsername(""); setPassword(""); setPassword2("");
-      await refresh();
-    }
-    setLoading(false);
-  }
-
   if (session) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-zinc-400">
-          ログイン中: <b className="text-emerald-400">{session.username}</b>
-        </p>
+        <div className="rounded-lg border border-emerald-900 bg-emerald-950/30 p-3 text-sm">
+          <p className="text-zinc-400">ログイン中: <b className="text-emerald-400 font-mono">{formatNum(session.accountNumber)}</b></p>
+        </div>
         <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-3 text-sm">
           <p className="text-zinc-400">あなたのHMC残高</p>
           <p className="mt-1 text-2xl font-bold text-amber-300">{session.pending.toLocaleString()} HMC</p>
-          <p className="mt-1 text-xs text-zinc-500">(未送金ポイント: {session.pending.toLocaleString()} / 送金済み: {session.sent.toLocaleString()})</p>
+          <p className="mt-1 text-xs text-zinc-500">(未送金: {session.pending.toLocaleString()} / 送金済み: {session.sent.toLocaleString()})</p>
         </div>
         <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-3 text-sm">
           <p className="text-zinc-400">あなたの受け取りアドレス(将来のチェーン送金先)</p>
@@ -74,15 +86,14 @@ export default function AuthPanel() {
         <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
           <p className="mb-2 text-sm font-semibold text-zinc-300">🔑 秘密鍵のエクスポート</p>
           <p className="mb-2 text-xs text-zinc-500">
-            パスワードを入力すると、このウォレットの秘密鍵を取り出せます(Phantom等へのインポート用)。<b className="text-red-400">絶対に他人に見せないでください。</b>
+            アカウント番号を入力すると、このウォレットの秘密鍵を取り出せます(Phantom等へのインポート用)。<b className="text-red-400">絶対に他人に見せないでください。</b>
           </p>
           <input
-            type="password"
-            value={expPassword}
-            onChange={(e) => setExpPassword(e.target.value)}
+            value={expInput}
+            onChange={(e) => setExpInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && doExport()}
-            placeholder="パスワード"
-            className="mb-2 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm outline-none focus:border-amber-500"
+            placeholder="16桁のアカウント番号"
+            className="mb-2 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-amber-500"
           />
           <button
             onClick={doExport}
@@ -119,51 +130,53 @@ export default function AuthPanel() {
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-zinc-400">
-        {mode === "register"
-          ? "ユーザー名とパスワードを決めるだけでOK。Phantom等のウォレットは不要です(登録でエアドロップ1,000 HMCの対象)"
-          : "ユーザー名とパスワードでログイン"}
-      </p>
-      <input
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="ユーザー名(2〜20文字)"
-        className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm outline-none focus:border-sky-500"
-      />
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && submit()}
-        placeholder="パスワード(4文字以上)"
-        className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm outline-none focus:border-sky-500"
-      />
-      {mode === "register" && (
-        <input
-          type="password"
-          value={password2}
-          onChange={(e) => setPassword2(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="パスワード(確認)"
-          className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm outline-none focus:border-sky-500"
-        />
-      )}
-      <div className="flex gap-2">
+    <div className="space-y-4">
+      {/* 新規発行 */}
+      <div className="rounded-lg border border-sky-900 bg-sky-950/20 p-4">
+        <p className="mb-2 text-sm font-semibold text-sky-300">🆕 アカウント番号を発行する</p>
+        <p className="mb-3 text-xs text-zinc-500">
+          メールもパスワードも不要。ボタン1つで16桁の番号が発行されます(登録でエアドロップ1,000 HMCの対象)
+        </p>
         <button
-          onClick={submit}
+          onClick={doCreate}
           disabled={loading}
-          className="flex-1 rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold hover:bg-sky-600 disabled:opacity-50"
+          className="w-full rounded-lg bg-sky-700 px-4 py-2.5 text-sm font-semibold hover:bg-sky-600 disabled:opacity-50"
         >
-          {loading ? "処理中..." : mode === "register" ? "アカウント作成" : "ログイン"}
+          {loading ? "発行中..." : "アカウント番号を発行"}
         </button>
+        {newAccount && (
+          <div className="mt-3 rounded-lg border border-amber-700 bg-amber-950/30 p-3">
+            <p className="text-xs text-red-300 font-bold">⚠️ この番号があなたのアカウントです。失くすと復旧できません。必ずメモしてください!</p>
+            <p className="mt-2 text-center font-mono text-2xl font-bold tracking-wider text-amber-300">{formatNum(newAccount)}</p>
+            <button
+              onClick={() => navigator.clipboard.writeText(newAccount)}
+              className="mt-2 w-full rounded-lg border border-zinc-700 px-3 py-1.5 text-xs hover:bg-zinc-800"
+            >
+              番号をコピー
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ログイン */}
+      <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+        <p className="mb-2 text-sm font-semibold">🔓 アカウント番号でログイン</p>
+        <input
+          value={inputNum}
+          onChange={(e) => setInputNum(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && doLogin()}
+          placeholder="1234 5678 9012 3456"
+          className="mb-2 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
+        />
         <button
-          onClick={() => setMode(mode === "register" ? "login" : "register")}
-          className="rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800"
+          onClick={doLogin}
+          disabled={loading}
+          className="w-full rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold hover:bg-emerald-600 disabled:opacity-50"
         >
-          {mode === "register" ? "ログインへ" : "新規登録へ"}
+          {loading ? "ログイン中..." : "ログイン"}
         </button>
       </div>
+
       {msg && (
         <p className={`text-sm ${msg.ok ? "text-emerald-400" : "text-red-400"}`}>{msg.text}</p>
       )}

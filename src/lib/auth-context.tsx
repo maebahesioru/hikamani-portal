@@ -5,26 +5,26 @@ const KEY = "hmc_session";
 
 interface Session {
   token: string;
-  username: string;
+  accountNumber: string;
   solanaAddress: string;
   pending: number;
   sent: number;
 }
 
 const AuthContext = createContext<{
-  session: Session | null;
-  login: (username: string, password: string) => Promise<string | null>;
-  register: (username: string, password: string) => Promise<string | null>;
-  logout: () => void;
-  refresh: () => Promise<void>;
-  authFetch: (path: string, options?: RequestInit) => Promise<Response>;
+session: Session | null;
+createAccount: () => Promise<{ error: string | null; accountNumber: string | null }>;
+login: (accountNumber: string) => Promise<string | null>;
+logout: () => void;
+refresh: () => Promise<void>;
+authFetch: (path: string, options?: RequestInit) => Promise<Response>;
 }>({
-  session: null,
-  login: async () => null,
-  register: async () => null,
-  logout: () => {},
-  refresh: async () => {},
-  authFetch: async () => new Response(),
+session: null,
+createAccount: async () => ({ error: null, accountNumber: null }),
+login: async () => null,
+logout: () => {},
+refresh: async () => {},
+authFetch: async () => new Response(),
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -49,30 +49,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return fetch(path, { ...options, headers });
   }
 
-  async function login(username: string, password: string): Promise<string | null> {
+  async function login(accountNumber: string): Promise<string | null> {
     const r = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ accountNumber }),
     });
     const j = await r.json();
     if (!r.ok) return j.error || "ログイン失敗";
-    save({ token: j.token, username: j.username, solanaAddress: j.solanaAddress, pending: 0, sent: 0 });
+    save({ token: j.token, accountNumber: j.accountNumber, solanaAddress: j.solanaAddress, pending: 0, sent: 0 });
     await refresh();
     return null;
   }
 
-  async function register(username: string, password: string): Promise<string | null> {
-    const r = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
+  async function createAccount(): Promise<{ error: string | null; accountNumber: string | null }> {
+    const r = await fetch("/api/auth/register", { method: "POST" });
     const j = await r.json();
-    if (!r.ok) return j.error || "登録失敗";
-    save({ token: j.token, username: j.username, solanaAddress: j.solanaAddress, pending: 0, sent: 0 });
+    if (!r.ok) return { error: j.error || "発行失敗", accountNumber: null };
+    save({ token: j.token, accountNumber: j.accountNumber, solanaAddress: j.solanaAddress, pending: 0, sent: 0 });
     await refresh();
-    return null;
+    return { error: null, accountNumber: j.accountNumber };
   }
 
   async function refresh() {
@@ -90,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, login, register, logout, refresh, authFetch }}>
+    <AuthContext.Provider value={{ session, createAccount, login, logout, refresh, authFetch }}>
       {children}
     </AuthContext.Provider>
   );

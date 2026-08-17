@@ -43,17 +43,17 @@ export async function POST(req: NextRequest) {
   if (!topic.options.includes(option)) return NextResponse.json({ error: "無効な選択肢です" }, { status: 400 });
 
   const points = readJson<Record<string, PointEntry>>("points.json", {});
-  const p = points[user.username] || { address: user.solanaAddress, pending: 0, sent: 0, updatedAt: "" };
+  const p = points[user.accountNumber] || { address: user.solanaAddress, pending: 0, sent: 0, updatedAt: "" };
   if (p.pending < BET_COST) {
     return NextResponse.json({ error: `ポイントが不足しています(投票: ${BET_COST} HMC・現在 ${p.pending} HMC)` }, { status: 400 });
   }
   p.pending -= BET_COST;
   p.updatedAt = new Date().toISOString();
-  points[user.username] = p;
+  points[user.accountNumber] = p;
   writeJson("points.json", points);
 
   const bets = readJson<BetEntry[]>("bets.json", []);
-  bets.push({ topicId, address: user.username, option, amount: BET_COST, at: new Date().toISOString() });
+  bets.push({ topicId, address: user.accountNumber, option, amount: BET_COST, at: new Date().toISOString() });
   writeJson("bets.json", bets);
 
   return NextResponse.json({ ok: true, topic: topic.title, option, spent: BET_COST, pending: p.pending });

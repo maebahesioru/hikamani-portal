@@ -12,11 +12,11 @@ export async function GET(req: NextRequest) {
 
   const points = readJson<Record<string, PointEntry>>("points.json", {});
   const wallets = readJson<Record<string, WalletEntry>>("wallets.json", {});
-  const p = points[user.username] || { address: user.solanaAddress, pending: 0, sent: 0, updatedAt: "" };
+  const p = points[user.accountNumber] || { address: user.solanaAddress, pending: 0, sent: 0, updatedAt: "" };
 
   return NextResponse.json({
     user: {
-      username: user.username,
+      username: user.accountNumber,
       solanaAddress: user.solanaAddress,
       airdropAmount: user.airdropAmount,
       airdropReceived: user.airdropReceived,

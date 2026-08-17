@@ -1,6 +1,6 @@
-// 秘密鍵エクスポート(パスワードで復号して返す)
+// 秘密鍵エクスポート(アカウント番号で復号して返す)
 import { NextRequest, NextResponse } from "next/server";
-import { userFromRequest, verifyPassword } from "@/lib/auth";
+import { userFromRequest, verifyAccountNumber } from "@/lib/auth";
 import { decryptPrivateKey } from "@/lib/crypto-keys";
 
 export const dynamic = "force-dynamic";
@@ -10,16 +10,16 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
-  const password = String(body?.password || "");
-  if (!verifyPassword(password, user.salt, user.hash)) {
-    return NextResponse.json({ error: "パスワードが違います" }, { status: 401 });
+  const accountNumber = String(body?.accountNumber || "").replace(/\s/g, "");
+  if (!verifyAccountNumber(accountNumber, user.salt, user.hash)) {
+    return NextResponse.json({ error: "アカウント番号が違います" }, { status: 401 });
   }
 
   if (!user.encryptedPrivateKey) {
     return NextResponse.json({ error: "このアカウントには秘密鍵が保存されていません(新しいアカウントでのみ利用可能)" }, { status: 400 });
   }
 
-  const secretKey = decryptPrivateKey(user.encryptedPrivateKey, password);
+  const secretKey = decryptPrivateKey(user.encryptedPrivateKey, accountNumber);
   if (!secretKey) {
     return NextResponse.json({ error: "秘密鍵の復号に失敗しました" }, { status: 500 });
   }

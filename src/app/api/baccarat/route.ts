@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (amount < MIN_BET) return NextResponse.json({ error: `最低ベットは ${MIN_BET} HMCです` }, { status: 400 });
 
   const points = readJson<Record<string, PointEntry>>("points.json", {});
-  const p = points[user.username] || { address: user.solanaAddress, pending: 0, sent: 0, updatedAt: "" };
+  const p = points[user.accountNumber] || { address: user.solanaAddress, pending: 0, sent: 0, updatedAt: "" };
   if (p.pending < amount) {
     return NextResponse.json({ error: `ポイントが不足しています(現在 ${p.pending} HMC)` }, { status: 400 });
   }
@@ -30,11 +30,11 @@ export async function POST(req: NextRequest) {
   const payout = win ? Math.floor(amount * PAYOUT[bet]) : 0;
   p.pending = p.pending - amount + payout;
   p.updatedAt = new Date().toISOString();
-  points[user.username] = p;
+  points[user.accountNumber] = p;
   writeJson("points.json", points);
 
   const history = readJson<BaccaratEntry[]>("baccarat.json", []);
-  history.push({ address: user.username, bet, amount, result, payout, at: new Date().toISOString() });
+  history.push({ address: user.accountNumber, bet, amount, result, payout, at: new Date().toISOString() });
   writeJson("baccarat.json", history);
 
   return NextResponse.json({ ok: true, win, result, bet, amount, payout, pending: p.pending });

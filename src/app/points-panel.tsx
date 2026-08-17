@@ -8,7 +8,7 @@ export default function PointsPanel() {
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-4">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-zinc-400">{session.username} のHMC残高</span>
+        <span className="text-sm text-zinc-400">{session.accountNumber} のHMC残高</span>
         <span className="text-2xl font-bold text-amber-300">{session.pending.toLocaleString()} HMC</span>
       </div>
       <p className="mt-1 text-xs text-zinc-600">
