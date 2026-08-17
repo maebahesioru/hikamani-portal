@@ -40,24 +40,25 @@ export default function Home() {
           <WalletPanel />
         </Panel>
 
-        {/* ログインボーナス + くじ */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <Panel title={`🎁 ログインボーナス(毎日 ${GAME.bonusPerDay} HMC)`}>
-            <BonusPanel />
-          </Panel>
-          <Panel title={`🎰 ヒカマくじ(1回 ${GAME.lotteryCost} HMC・当選で ${GAME.lotteryWin} HMC)`}>
-            <LotteryPanel />
-          </Panel>
-        </div>
+        {/* ログインボーナス */}
+        <Panel title={`🎁 ログインボーナス(毎日 ${GAME.bonusPerDay} HMC)`}>
+          <BonusPanel />
+        </Panel>
 
-        {/* 予想投票 + バカラ */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <Panel title="🗳 予想投票(1票 50 HMC)">
-            <BetPanel />
-          </Panel>
-          <Panel title="🃏 バカラ(最低 50 HMC)">
-            <BaccaratPanel />
-          </Panel>
+        {/* ゲームへの案内 */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          <a href="/kuji" className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 hover:border-amber-600 transition-colors">
+            <p className="font-semibold">🎰 ヒカマくじ</p>
+            <p className="mt-1 text-xs text-zinc-400">{GAME.lotteryCost} HMCで抽選・当選で{GAME.lotteryWin} HMC</p>
+          </a>
+          <a href="/vote" className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 hover:border-sky-600 transition-colors">
+            <p className="font-semibold">🗳 予想投票</p>
+            <p className="mt-1 text-xs text-zinc-400">界隈の出来事を予想して50 HMCで投票</p>
+          </a>
+          <a href="/baccarat" className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 hover:border-fuchsia-600 transition-colors">
+            <p className="font-semibold">🃏 バカラ</p>
+            <p className="mt-1 text-xs text-zinc-400">50 HMC〜・プレイヤー/バンカー/タイ</p>
+          </a>
         </div>
 
         {/* ポイント残高 */}
@@ -140,10 +141,7 @@ export default function Home() {
 // ---- クライアントコンポーネント ----
 import WalletPanel from "./wallet-panel";
 import BonusPanel from "./bonus-panel";
-import LotteryPanel from "./lottery-panel";
 import PointsPanel from "./points-panel";
-import BetPanel from "./bet-panel";
-import BaccaratPanel from "./baccarat-panel";
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (

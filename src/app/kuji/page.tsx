@@ -1,0 +1,25 @@
+import type { Metadata } from "next";
+import LotteryPanel from "../lottery-panel";
+import { GAME } from "@/lib/hmc";
+
+export const metadata: Metadata = {
+  title: "ヒカマくじ - Hikamani Coin (HMC)",
+  description: `ヒカマくじ: ${GAME.lotteryCost} HMCで抽選・当選で${GAME.lotteryWin} HMC`,
+};
+
+export default function KujiPage() {
+  return (
+    <main className="mx-auto max-w-2xl px-4 py-8">
+      <h1 className="text-2xl font-bold">🎰 ヒカマくじ</h1>
+      <p className="mt-1 mb-6 text-sm text-zinc-400">
+        {GAME.lotteryCost} HMCで抽選。当たると{GAME.lotteryWin} HMC(当選確率{GAME.lotteryWinRate * 100}%)
+      </p>
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+        <LotteryPanel />
+      </div>
+      <p className="mt-4 text-xs text-zinc-600">
+        くじで獲得したHMCはポイントとして記録され、運営が定期的にブロックチェーン上で送金します。
+      </p>
+    </main>
+  );
+}
