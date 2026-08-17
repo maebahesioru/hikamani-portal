@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 const MIN_BET = 50;
 
 export default function BaccaratPanel() {
-  const { session, authFetch } = useAuth();
+  const { session, authFetch, refresh } = useAuth();
   const [bet, setBet] = useState<"player" | "banker" | "tie">("player");
   const [amount, setAmount] = useState(MIN_BET);
   const [result, setResult] = useState<{ win: boolean; result: string; payout: number; pending: number } | null>(null);
@@ -26,6 +26,7 @@ export default function BaccaratPanel() {
       if (r.ok) {
         setResult({ win: j.win, result: j.result, payout: j.payout, pending: j.pending });
         setMsg({ ok: true, text: j.win ? `🎉 当たり! +${j.payout} HMC` : `残念... 残り ${j.pending} HMC` });
+        await refresh(); // 残高表示を更新
       } else {
         setMsg({ ok: false, text: j.error || "プレイに失敗しました" });
       }

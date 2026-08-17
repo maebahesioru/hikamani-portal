@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface OnchainData {
   wallets: Record<string, { address: string; balance: number | null }>;
@@ -10,14 +10,20 @@ export default function OnchainPanel() {
   const [data, setData] = useState<OnchainData | null>(null);
   const [err, setErr] = useState(false);
 
-  useEffect(() => {
+  const fetchData = useCallback(() => {
     fetch("/api/onchain").then((r) => r.json()).then((j) => {
-      if (j.wallets) setData(j);
+      if (j.wallets) { setData(j); setErr(false); }
       else setErr(true);
     }).catch(() => setErr(true));
   }, []);
 
-  if (err) return <p className="text-xs text-zinc-600">オンチェーン残高を取得できませんでした(表示は固定値)</p>;
+  useEffect(() => {
+    fetchData();
+    const id = setInterval(fetchData, 30000); // 30秒ごとに自動更新
+    return () => clearInterval(id);
+  }, [fetchData]);
+
+  if (err) return <p className="text-xs text-zinc-600">オンチェーン残高を取得できませんでした(30秒後に再試行)</p>;
   if (!data) return <p className="text-xs text-zinc-600">オンチェーン残高を取得中...</p>;
 
   const labels: Record<string, string> = { reward: "報酬プール", ops: "運営リザーブ", airdrop: "エアドロップ" };
@@ -31,7 +37,9 @@ export default function OnchainPanel() {
           </span>
         </div>
       ))}
-      <p className="pt-1 text-[10px] text-zinc-700">実残高(オンチェーン)・{new Date(data.updatedAt).toLocaleTimeString("ja-JP")} 時点</p>
+      <p className="pt-1 text-[10px] text-zinc-700">
+        実残高(オンチェーン)・{new Date(data.updatedAt).toLocaleTimeString("ja-JP")} 時点・30秒ごとに自動更新
+      </p>
     </div>
   );
 }

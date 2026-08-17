@@ -26,7 +26,6 @@ const NAV = [
   { href: "/kuji", label: "🎰 くじ" },
   { href: "/vote", label: "🗳 予想投票" },
   { href: "/baccarat", label: "🃏 バカラ" },
-  { href: "/admin", label: "🔐 管理" },
 ];
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -122,9 +122,16 @@ export default function Home() {
             </thead>
             <tbody className="divide-y divide-zinc-800/60">
               {PRICES.map((p) => (
-                <tr key={p.item}>
-                  <td className="py-2 pr-4">{p.item}</td>
-                  <td className="py-2">{p.price}</td>
+                <tr key={p.item} className={p.available ? "" : "opacity-50"}>
+                  <td className={`py-2 pr-4 ${p.available ? "" : "line-through"}`}>{p.item}</td>
+                  <td className={`py-2 ${p.available ? "" : "line-through"}`}>{p.price}</td>
+                  <td className="py-2 text-right">
+                    {p.available ? (
+                      <span className="text-xs text-emerald-400">利用可</span>
+                    ) : (
+                      <span className="rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-500">準備中</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

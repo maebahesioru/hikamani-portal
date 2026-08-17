@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { GAME } from "@/lib/hmc";
 
 export default function LotteryPanel() {
-  const { session, authFetch } = useAuth();
+  const { session, authFetch, refresh } = useAuth();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -19,6 +19,7 @@ export default function LotteryPanel() {
           ok: true,
           text: j.won ? `🎉 大当たり! +${j.prize} HMC! (現在 ${j.pending} HMC)` : `はずれ... 現在 ${j.pending} HMC`,
         });
+        await refresh(); // 残高表示を更新
       } else {
         setMsg({ ok: false, text: j.error || "くじを引けませんでした" });
       }

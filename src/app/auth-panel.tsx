@@ -6,12 +6,17 @@ function formatNum(n: string): string {
   return n.replace(/(\d{4})(?=\d)/g, "$1 ");
 }
 
+function maskNum(n: string): string {
+  return "•••• •••• •••• ••••";
+}
+
 export default function AuthPanel() {
   const { session, createAccount, login, logout, refresh } = useAuth();
   const [inputNum, setInputNum] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [newAccount, setNewAccount] = useState<string | null>(null);
+  const [showNum, setShowNum] = useState(false);
   const [expInput, setExpInput] = useState("");
   const [exported, setExported] = useState<{ warning: string; privateKeyJson: string } | null>(null);
   const [expMsg, setExpMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -70,7 +75,16 @@ export default function AuthPanel() {
     return (
       <div className="space-y-3">
         <div className="rounded-lg border border-emerald-900 bg-emerald-950/30 p-3 text-sm">
-          <p className="text-zinc-400">ログイン中: <b className="text-emerald-400 font-mono">{formatNum(session.accountNumber)}</b></p>
+          <div className="flex items-center justify-between">
+            <p className="text-zinc-400">ログイン中: <b className="text-emerald-400 font-mono">{showNum ? formatNum(session.accountNumber) : maskNum(session.accountNumber)}</b></p>
+            <button
+              onClick={() => setShowNum(!showNum)}
+              className="rounded-lg border border-zinc-700 px-2 py-1 text-xs hover:bg-zinc-800"
+            >
+              {showNum ? "🙈 番号を隠す" : "👁 番号を表示"}
+            </button>
+          </div>
+          <p className="mt-1 text-[10px] text-zinc-600">アカウント番号はパスワードと同じです。画面共有やスクリーンショットに注意してください。</p>
         </div>
         <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-3 text-sm">
           <p className="text-zinc-400">あなたのHMC残高</p>

@@ -13,7 +13,7 @@ interface Topic {
 }
 
 export default function BetPanel() {
-  const { session, authFetch } = useAuth();
+  const { session, authFetch, refresh } = useAuth();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -37,6 +37,7 @@ export default function BetPanel() {
       const j = await r.json();
       if (r.ok) {
         setMsg({ ok: true, text: `「${option}」に投票しました(50 HMC・残り ${j.pending} HMC)` });
+        await refresh(); // 残高表示を更新
         const j2 = await fetch("/api/bet").then((x) => x.json());
         setTopics(j2.topics || []);
       } else {

@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { GAME } from "@/lib/hmc";
 
 export default function BonusPanel() {
-  const { session, authFetch } = useAuth();
+  const { session, authFetch, refresh } = useAuth();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -16,6 +16,7 @@ export default function BonusPanel() {
       const j = await r.json();
       if (r.ok) {
         setMsg({ ok: true, text: `+${j.amount} HMC 獲得! 現在 ${j.pending} HMC` });
+        await refresh(); // 残高表示を更新
       } else {
         setMsg({ ok: false, text: j.error || "受け取りに失敗しました" });
       }
