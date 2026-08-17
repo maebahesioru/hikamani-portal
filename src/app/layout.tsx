@@ -22,6 +22,7 @@ export const metadata: Metadata = {
 
 const NAV = [
   { href: "/", label: "🏠 ホーム" },
+  { href: "/account", label: "👤 アカウント" },
   { href: "/kuji", label: "🎰 くじ" },
   { href: "/vote", label: "🗳 予想投票" },
   { href: "/baccarat", label: "🃏 バカラ" },

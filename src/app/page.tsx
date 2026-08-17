@@ -35,10 +35,16 @@ export default function Home() {
       </header>
 
       <div className="mx-auto max-w-4xl px-4 py-8 space-y-10">
-        {/* ウォレット/アカウント */}
-        <Panel title="👤 ヒカマニコインウォレット(アカウント)">
-          <AuthPanel />
-        </Panel>
+        {/* アカウント案内 */}
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5">
+          <p className="font-semibold">👤 ウォレット(アカウント)</p>
+          <p className="mt-1 text-sm text-zinc-400">
+            16桁のアカウント番号でログインすると、ログインボーナス・くじ・投票・バカラが使えます。
+          </p>
+          <a href="/account" className="mt-3 inline-block rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold hover:bg-sky-600">
+            アカウントページへ →
+          </a>
+        </div>
 
         {/* ログインボーナス */}
         <Panel title={`🎁 ログインボーナス(毎日 ${GAME.bonusPerDay} HMC)`}>
@@ -143,7 +149,6 @@ export default function Home() {
 }
 
 // ---- クライアントコンポーネント ----
-import AuthPanel from "./auth-panel";
 import BonusPanel from "./bonus-panel";
 import PointsPanel from "./points-panel";
 import OnchainPanel from "./onchain-panel";

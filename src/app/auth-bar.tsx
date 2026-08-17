@@ -22,7 +22,7 @@ export default function AuthBar() {
           </button>
         </>
       ) : (
-        <Link href="/" className="rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-semibold hover:bg-sky-600">
+        <Link href="/account" className="rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-semibold hover:bg-sky-600">
           番号を発行/ログイン
         </Link>
       )}
