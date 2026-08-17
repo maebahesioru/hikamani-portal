@@ -1,37 +1,29 @@
-// 状態取得(ダッシュボード)
+// 状態取得(ダッシュボード・ログインユーザー向け)
 import { NextRequest, NextResponse } from "next/server";
-import { readJson, WalletEntry, PointEntry, BonusEntry, LotteryEntry } from "@/lib/store";
+import { userFromRequest } from "@/lib/auth";
+import { readJson, PointEntry, WalletEntry } from "@/lib/store";
 import { HMC } from "@/lib/hmc";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const address = (req.nextUrl.searchParams.get("address") || "").trim();
-  const wallets = readJson<Record<string, WalletEntry>>("wallets.json", {});
+  const user = userFromRequest(req.headers.get("authorization"));
+  if (!user) return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
+
   const points = readJson<Record<string, PointEntry>>("points.json", {});
-  const bonuses = readJson<BonusEntry[]>("bonus.json", []);
-  const lottery = readJson<LotteryEntry[]>("lottery.json", []);
-
-  const p = address ? points[address] : undefined;
-  const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
-  const bonusToday = address ? bonuses.some((b) => b.address === address && b.date === today) : false;
-  const registered = address ? !!wallets[address] : false;
-
-  const winCount = lottery.filter((l) => l.result === "win").length;
-  const totalSpent = lottery.reduce((s, l) => s + l.amount, 0);
-  const totalPrizes = lottery.reduce((s, l) => s + l.prize, 0);
+  const wallets = readJson<Record<string, WalletEntry>>("wallets.json", {});
+  const p = points[user.username] || { address: user.solanaAddress, pending: 0, sent: 0, updatedAt: "" };
 
   return NextResponse.json({
+    user: {
+      username: user.username,
+      solanaAddress: user.solanaAddress,
+      airdropAmount: user.airdropAmount,
+      airdropReceived: user.airdropReceived,
+    },
+    wallet: p,
     registeredWallets: Object.keys(wallets).length,
-    bonusClaimedToday: bonuses.length,
-    lotteryPlays: lottery.length,
-    lotteryWins: winCount,
-    lotterySpent: totalSpent,
-    lotteryPrizes: totalPrizes,
-    wallet: p ? { pending: p.pending, sent: p.sent } : null,
-    bonusToday,
-    registered,
-    wallets: HMC.wallets,
-    airdropRegistered: address ? !!wallets[address] : false,
+    totalPending: Object.values(points).reduce((s, x) => s + x.pending, 0),
+    hmc: HMC,
   });
 }

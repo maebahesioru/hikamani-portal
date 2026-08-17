@@ -1,38 +1,31 @@
 // ログインボーナス(1日1回・HMCポイント付与)
 import { NextRequest, NextResponse } from "next/server";
-import { PublicKey } from "@solana/web3.js";
+import { userFromRequest } from "@/lib/auth";
 import { readJson, writeJson, BonusEntry, PointEntry } from "@/lib/store";
-import { GAME } from "@/lib/hmc";
 
 export const dynamic = "force-dynamic";
 
-function todayJp(): string {
-  // JST(UTC+9)の日付
-  return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
-}
+const BONUS_PER_DAY = 10;
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null);
-  const address = (body?.address || "").trim();
-  try {
-    new PublicKey(address);
-  } catch {
-    return NextResponse.json({ error: "無効なウォレットアドレスです" }, { status: 400 });
+  const user = userFromRequest(req.headers.get("authorization"));
+  if (!user) return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const bonuses = readJson<BonusEntry[]>("bonuses.json", []);
+  if (bonuses.some((b) => b.date === today && b.address === user.username)) {
+    return NextResponse.json({ error: "今日のボーナスは受け取り済みです" }, { status: 400 });
   }
-  const today = todayJp();
-  const bonuses = readJson<BonusEntry[]>("bonus.json", []);
-  const already = bonuses.find((b) => b.address === address && b.date === today);
-  if (already) {
-    return NextResponse.json({ error: "今日のログインボーナスは受け取り済みです", received: true, date: today }, { status: 409 });
-  }
-  bonuses.push({ date: today, address, amount: GAME.bonusPerDay, at: new Date().toISOString() });
-  writeJson("bonus.json", bonuses);
-  // ポイント加算
+
+  bonuses.push({ date: today, address: user.username, amount: BONUS_PER_DAY, at: new Date().toISOString() });
+  writeJson("bonuses.json", bonuses);
+
   const points = readJson<Record<string, PointEntry>>("points.json", {});
-  const p = points[address] || { address, pending: 0, sent: 0, updatedAt: "" };
-  p.pending += GAME.bonusPerDay;
+  const p = points[user.username] || { address: user.solanaAddress, pending: 0, sent: 0, updatedAt: "" };
+  p.pending += BONUS_PER_DAY;
   p.updatedAt = new Date().toISOString();
-  points[address] = p;
+  points[user.username] = p;
   writeJson("points.json", points);
-  return NextResponse.json({ ok: true, amount: GAME.bonusPerDay, pending: p.pending, date: today });
+
+  return NextResponse.json({ ok: true, amount: BONUS_PER_DAY, pending: p.pending });
 }

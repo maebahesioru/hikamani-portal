@@ -2,8 +2,8 @@
 import { useState } from "react";
 
 interface AdminState {
-  stats: { wallets: number; airdropTotal: number; bonuses: number; lotteries: number; bets: number; baccarats: number; totalPending: number; totalSent: number };
-  wallets: Record<string, any>;
+  stats: { users: number; airdropTotal: number; bonuses: number; lotteries: number; bets: number; baccarats: number; totalPending: number; totalSent: number };
+  users: Record<string, any>;
   points: Record<string, any>;
   topics: any[];
   lastBonuses: any[];
@@ -86,7 +86,7 @@ export default function AdminPanel() {
       {/* 統計 */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          ["登録ウォレット", data?.stats.wallets],
+          ["登録ユーザー", data?.stats.users],
           ["エアドロ対象", data?.stats.airdropTotal.toLocaleString() + " HMC"],
           ["未送金ポイント", data?.stats.totalPending.toLocaleString() + " HMC"],
           ["送金済み", data?.stats.totalSent.toLocaleString() + " HMC"],
@@ -147,14 +147,14 @@ export default function AdminPanel() {
         ))}
       </div>
 
-      {/* 登録ウォレット */}
+      {/* 登録ユーザー */}
       <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
-        <p className="mb-2 font-semibold">💳 登録ウォレット({Object.keys(data?.wallets || {}).length}件)</p>
+        <p className="mb-2 font-semibold">👤 登録ユーザー({Object.keys(data?.users || {}).length}人)</p>
         <div className="max-h-60 overflow-y-auto font-mono text-xs">
-          {Object.entries(data?.wallets || {}).map(([addr, w]) => (
-            <p key={addr} className="border-b border-zinc-800/50 py-1">
-              {addr.slice(0, 8)}...{addr.slice(-4)} | エアドロ {w.airdropAmount} HMC
-              {w.airdropReceived ? " ✅" : " ⏳"}
+          {Object.entries(data?.users || {}).map(([name, u]) => (
+            <p key={name} className="border-b border-zinc-800/50 py-1">
+              {name} | {u.solanaAddress.slice(0, 6)}...{u.solanaAddress.slice(-4)} | エアドロ {u.airdropAmount} HMC
+              {u.airdropReceived ? " ✅" : " ⏳"} | 残高 {data?.points?.[name]?.pending ?? 0} HMC
             </p>
           ))}
         </div>

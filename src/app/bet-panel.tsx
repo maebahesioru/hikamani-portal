@@ -1,17 +1,19 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/auth-context";
 
 interface Topic {
   id: string;
   title: string;
   options: string[];
   status: string;
+  winner: string | null;
   counts: Record<string, number>;
   totalBets: number;
 }
 
 export default function BetPanel() {
-  const [address, setAddress] = useState("");
+  const { session, authFetch } = useAuth();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -22,16 +24,15 @@ export default function BetPanel() {
   }, []);
 
   async function vote(topicId: string) {
-    const addr = address.trim();
     const option = selected[topicId];
-    if (!addr) { setMsg({ ok: false, text: "アドレスを入力してください" }); return; }
+    if (!session) { setMsg({ ok: false, text: "ログインが必要です(上部の「ログイン/登録」から)" }); return; }
     if (!option) { setMsg({ ok: false, text: "選択肢を選んでください" }); return; }
     setLoading(true);
     try {
-      const r = await fetch("/api/bet", {
+      const r = await authFetch("/api/bet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: addr, topicId, option }),
+        body: JSON.stringify({ topicId, option }),
       });
       const j = await r.json();
       if (r.ok) {
@@ -52,18 +53,12 @@ export default function BetPanel() {
       <p className="text-sm text-zinc-400">
         界隈で起こることを予想して <b className="text-sky-300">50 HMC</b> で投票(配当は結果確定時)
       </p>
-      <input
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-        placeholder="ウォレットアドレス"
-        className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
-      />
       {topics.map((t) => (
         <div key={t.id} className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
           <div className="flex items-center justify-between">
             <p className="font-semibold">{t.title}</p>
             <span className={`text-xs ${t.status === "open" ? "text-emerald-400" : "text-zinc-500"}`}>
-              {t.status === "open" ? "受付中" : "締切"}
+              {t.status === "open" ? "受付中" : `確定: ${t.winner}`}
             </span>
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -71,10 +66,11 @@ export default function BetPanel() {
               <button
                 key={o}
                 onClick={() => setSelected((s) => ({ ...s, [t.id]: o }))}
+                disabled={t.status !== "open"}
                 className={`rounded-lg px-3 py-1.5 text-sm border ${
                   selected[t.id] === o
                     ? "border-sky-500 bg-sky-900/50 text-sky-300"
-                    : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700"
+                    : "border-zinc-700 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40"
                 }`}
               >
                 {o}

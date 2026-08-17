@@ -35,9 +35,9 @@ export default function Home() {
       </header>
 
       <div className="mx-auto max-w-4xl px-4 py-8 space-y-10">
-        {/* ウォレット登録 + 操作パネル */}
-        <Panel title="💳 ウォレット登録 / エアドロップ申請">
-          <WalletPanel />
+        {/* ウォレット/アカウント */}
+        <Panel title="👤 ヒカマニコインウォレット(アカウント)">
+          <AuthPanel />
         </Panel>
 
         {/* ログインボーナス */}
@@ -143,7 +143,7 @@ export default function Home() {
 }
 
 // ---- クライアントコンポーネント ----
-import WalletPanel from "./wallet-panel";
+import AuthPanel from "./auth-panel";
 import BonusPanel from "./bonus-panel";
 import PointsPanel from "./points-panel";
 import OnchainPanel from "./onchain-panel";

@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 
 const MIN_BET = 50;
 
 export default function BaccaratPanel() {
-  const [address, setAddress] = useState("");
+  const { session, authFetch } = useAuth();
   const [bet, setBet] = useState<"player" | "banker" | "tie">("player");
   const [amount, setAmount] = useState(MIN_BET);
   const [result, setResult] = useState<{ win: boolean; result: string; payout: number; pending: number } | null>(null);
@@ -12,15 +13,14 @@ export default function BaccaratPanel() {
   const [loading, setLoading] = useState(false);
 
   async function play() {
-    const addr = address.trim();
-    if (!addr) { setMsg({ ok: false, text: "アドレスを入力してください" }); return; }
+    if (!session) { setMsg({ ok: false, text: "ログインが必要です(上部の「ログイン/登録」から)" }); return; }
     setLoading(true);
     setResult(null);
     try {
-      const r = await fetch("/api/baccarat", {
+      const r = await authFetch("/api/baccarat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: addr, bet, amount }),
+        body: JSON.stringify({ bet, amount }),
       });
       const j = await r.json();
       if (r.ok) {
@@ -42,12 +42,6 @@ export default function BaccaratPanel() {
       <p className="text-sm text-zinc-400">
         バカラ(簡易版)。<b className="text-fuchsia-300">{MIN_BET} HMC</b> からベット。換金なしのゲーム内ポイント
       </p>
-      <input
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-        placeholder="ウォレットアドレス"
-        className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-fuchsia-500"
-      />
       <div className="flex flex-wrap gap-2">
         {(["player", "banker", "tie"] as const).map((b) => (
           <button
