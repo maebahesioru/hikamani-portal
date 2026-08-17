@@ -4,7 +4,8 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile
+# dangerouslyAllowAllBuilds: pnpm 11.2.2でonlyBuiltDependenciesが効かずunrs-resolverがブロックされる問題の回避(2026-08-17実証)
+RUN corepack enable && pnpm install --frozen-lockfile --config.dangerouslyAllowAllBuilds=true
 
 FROM base AS builder
 WORKDIR /app
