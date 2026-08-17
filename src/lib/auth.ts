@@ -7,6 +7,7 @@ export interface User {
   salt: string;
   hash: string;
   solanaAddress: string; // 自動生成されたHMC受け取りアドレス
+  encryptedPrivateKey: string | null; // 秘密鍵(パスワードでAES-256-GCM暗号化)
   airdropReceived: boolean;
   airdropAmount: number;
   createdAt: string;

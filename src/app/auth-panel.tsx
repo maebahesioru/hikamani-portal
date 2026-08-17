@@ -10,6 +10,34 @@ export default function AuthPanel() {
   const [password2, setPassword2] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [expPassword, setExpPassword] = useState("");
+  const [exported, setExported] = useState<{ warning: string; privateKeyJson: string } | null>(null);
+  const [expMsg, setExpMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  async function doExport() {
+    if (!expPassword) { setExpMsg({ ok: false, text: "パスワードを入力してください" }); return; }
+    setExporting(true);
+    setExported(null);
+    try {
+      const r = await fetch("/api/wallet/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", authorization: `Bearer ${session?.token}` },
+        body: JSON.stringify({ password: expPassword }),
+      });
+      const j = await r.json();
+      if (r.ok) {
+        setExported({ warning: j.warning, privateKeyJson: j.privateKeyJson });
+        setExpMsg({ ok: true, text: "復号成功" });
+        setExpPassword("");
+      } else {
+        setExpMsg({ ok: false, text: j.error || "エクスポートに失敗しました" });
+      }
+    } catch {
+      setExpMsg({ ok: false, text: "通信エラー" });
+    }
+    setExporting(false);
+  }
 
   async function submit() {
     const name = username.trim();
@@ -41,6 +69,48 @@ export default function AuthPanel() {
           <p className="text-zinc-400">あなたの受け取りアドレス(将来のチェーン送金先)</p>
           <p className="mt-1 font-mono text-xs text-sky-300 break-all">{session.solanaAddress}</p>
         </div>
+
+        {/* 秘密鍵エクスポート */}
+        <div className="rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
+          <p className="mb-2 text-sm font-semibold text-zinc-300">🔑 秘密鍵のエクスポート</p>
+          <p className="mb-2 text-xs text-zinc-500">
+            パスワードを入力すると、このウォレットの秘密鍵を取り出せます(Phantom等へのインポート用)。<b className="text-red-400">絶対に他人に見せないでください。</b>
+          </p>
+          <input
+            type="password"
+            value={expPassword}
+            onChange={(e) => setExpPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && doExport()}
+            placeholder="パスワード"
+            className="mb-2 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm outline-none focus:border-amber-500"
+          />
+          <button
+            onClick={doExport}
+            disabled={exporting}
+            className="rounded-lg bg-amber-700 px-4 py-1.5 text-sm font-semibold hover:bg-amber-600 disabled:opacity-50"
+          >
+            {exporting ? "復号中..." : "秘密鍵を取り出す"}
+          </button>
+          {exported && (
+            <div className="mt-2 space-y-2">
+              <p className="text-xs text-red-400">{exported.warning}</p>
+              <textarea
+                readOnly
+                value={exported.privateKeyJson}
+                rows={3}
+                className="w-full rounded-lg border border-red-900 bg-red-950/30 px-3 py-2 font-mono text-[10px] text-red-200 outline-none"
+              />
+              <button
+                onClick={() => navigator.clipboard.writeText(exported.privateKeyJson)}
+                className="rounded-lg border border-zinc-700 px-3 py-1 text-xs hover:bg-zinc-800"
+              >
+                コピーする
+              </button>
+            </div>
+          )}
+          {expMsg && <p className={`mt-2 text-xs ${expMsg.ok ? "text-emerald-400" : "text-red-400"}`}>{expMsg.text}</p>}
+        </div>
+
         <button onClick={logout} className="rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800">
           ログアウト
         </button>

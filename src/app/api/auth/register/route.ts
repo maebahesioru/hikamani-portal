@@ -4,6 +4,7 @@ import { randomBytes } from "crypto";
 import { Keypair } from "@solana/web3.js";
 import { getUsers, saveUsers, hashPassword, createSessionToken, User } from "@/lib/auth";
 import { readJson, writeJson, PointEntry } from "@/lib/store";
+import { encryptPrivateKey } from "@/lib/crypto-keys";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "このユーザー名は既に使われています" }, { status: 409 });
   }
 
-  // Solanaキーペアを自動生成(受け取りアドレスとして使用・秘密鍵はサーバーに保存しない)
+  // Solanaキーペアを自動生成(受け取りアドレス+秘密鍵はパスワードで暗号化して保存)
   const kp = Keypair.generate();
   const salt = randomBytes(16).toString("hex");
   const token = createSessionToken();
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
     salt,
     hash: hashPassword(password, salt),
     solanaAddress: kp.publicKey.toBase58(),
+    encryptedPrivateKey: encryptPrivateKey(kp.secretKey, password),
     airdropReceived: false,
     airdropAmount: AIRDROP_AMOUNT,
     createdAt: new Date().toISOString(),
