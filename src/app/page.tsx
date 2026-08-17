@@ -99,6 +99,10 @@ export default function Home() {
           <p className="mt-3 text-xs text-zinc-500">
             ※ エアドロップ・ログインボーナス・くじで獲得したHMCはポイントとして記録され、運営が定期的にブロックチェーン上で送金します(送金完了まで「未送金」表示)。
           </p>
+          <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
+            <p className="mb-2 text-xs font-semibold text-zinc-400">🔄 オンチェーン実残高</p>
+            <OnchainPanel />
+          </div>
         </Panel>
 
         {/* 価格表 */}
@@ -142,6 +146,7 @@ export default function Home() {
 import WalletPanel from "./wallet-panel";
 import BonusPanel from "./bonus-panel";
 import PointsPanel from "./points-panel";
+import OnchainPanel from "./onchain-panel";
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (

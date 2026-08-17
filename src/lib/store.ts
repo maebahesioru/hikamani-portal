@@ -48,3 +48,29 @@ export interface PointEntry {
   sent: number; // 送金済み
   updatedAt: string;
 }
+
+export interface BetTopic {
+  id: string;
+  title: string;
+  options: string[];
+  status: "open" | "closed";
+  winner: string | null; // 確定した選択肢
+  createdAt: string;
+}
+
+export interface BetEntry {
+  topicId: string;
+  address: string;
+  option: string;
+  amount: number;
+  at: string;
+}
+
+export interface BaccaratEntry {
+  address: string;
+  bet: string; // player | banker | tie
+  amount: number;
+  result: string;
+  payout: number;
+  at: string;
+}
