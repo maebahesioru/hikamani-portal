@@ -36,7 +36,7 @@ export interface BonusEntry {
 
 export interface LotteryEntry {
   address: string;
-  result: "win" | "lose";
+  result: string; // 当選名(福島賞/1等/2等/3等/4等/5等)
   amount: number; // 消費額
   prize: number; // 当選時
   at: string;
