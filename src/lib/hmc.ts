@@ -25,10 +25,21 @@ export const PRICES = [
   { item: "レンタルサーバー最小", price: "10,000 HMC/月", available: false },
 ] as const;
 
+// ヒカマくじ 当選構成(累積確率で抽選・合計100%)
+export const GAME_LOTTERIES = [
+  { name: "福島賞", prize: 7095110, rate: 0.000003 }, // 0.0003%
+  { name: "1等", prize: 10000, rate: 0.000997 },      // 0.0997%
+  { name: "2等", prize: 1000, rate: 0.009 },           // 0.9%
+  { name: "3等", prize: 500, rate: 0.01 },             // 1%
+  { name: "4等", prize: 200, rate: 0.18 },             // 18%
+  { name: "5等", prize: 10, rate: 0.8 },               // 80%
+] as const;
+
 // ログインボーナス・くじ設定
 export const GAME = {
   bonusPerDay: 10, // ログインボーナス(HMC/日)
   lotteryCost: 100, // くじ1回(HMC)
-  lotteryWin: 200, // 当選時(HMC)
-  lotteryWinRate: 0.1, // 当選確率10%
-} as const;
+  lotteryWin: 200, // 旧: 当選(互換用)
+  lotteryWinRate: 0.1, // 旧: 当選率(互換用)
+  lotteries: GAME_LOTTERIES,
+};
