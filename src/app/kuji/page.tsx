@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function KujiPage() {
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
+    <main className=" px-4 py-8">
       <PageTitle textKey="kuji" />
       <p className="mt-1 mb-6 text-sm text-zinc-600 dark:text-zinc-400">
         {GAME.lotteryCost} HMCで抽選。当たると{GAME.lotteryWin} HMC(当選確率{GAME.lotteryWinRate * 100}%)

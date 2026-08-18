@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function VotePage() {
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
+    <main className=" px-4 py-8">
       <PageTitle textKey="vote" />
       <p className="mt-1 mb-6 text-sm text-zinc-400">
         界隈で起こることを予想して <b className="text-sky-300">50 HMC</b> で投票(配当は結果確定時)

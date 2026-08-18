@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { Keypair } from "@solana/web3.js";
-import { getUsers, saveUsers, hashAccountNumber, createSessionToken, generateAccountNumber, generateReceiveId, formatAccountNumber, User } from "@/lib/auth";
+import { getUsers, saveUsers, hashAccountNumber, hashPassword, createSessionToken, generateAccountNumber, generateReceiveId, formatAccountNumber, User } from "@/lib/auth";
 import { readJson, writeJson, PointEntry } from "@/lib/store";
 import { encryptPrivateKey } from "@/lib/crypto-keys";
 
@@ -11,6 +11,13 @@ export const dynamic = "force-dynamic";
 const AIRDROP_AMOUNT = 1000; // 発行でエアドロ1,000 HMC対象
 
 export async function POST(req: NextRequest) {
+  const body = await req.json().catch(() => null);
+  const password = String(body?.password || "");
+  // パスワードは8文字以上を必須(番号+パスワードのハイブリッド認証)
+  if (password.length < 8) {
+    return NextResponse.json({ error: "パスワードは8文字以上にしてください" }, { status: 400 });
+  }
+
   // 既存の番号と衝突しない16桁を生成(ほぼ起きないが念のため)
   const users = getUsers();
   let accountNumber = "";
@@ -34,8 +41,9 @@ export async function POST(req: NextRequest) {
     receiveId,
     salt,
     hash: hashAccountNumber(accountNumber, salt),
+    passwordHash: hashPassword(password, salt),
     solanaAddress: kp.publicKey.toBase58(),
-    encryptedPrivateKey: encryptPrivateKey(kp.secretKey, accountNumber),
+    encryptedPrivateKey: encryptPrivateKey(kp.secretKey, password),
     airdropReceived: false,
     airdropAmount: AIRDROP_AMOUNT,
     createdAt: new Date().toISOString(),

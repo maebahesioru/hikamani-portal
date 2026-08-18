@@ -14,8 +14,8 @@ interface Session {
 
 const AuthContext = createContext<{
 session: Session | null;
-createAccount: () => Promise<{ error: string | null; accountNumber: string | null }>;
-login: (accountNumber: string) => Promise<string | null>;
+createAccount: (password: string) => Promise<{ error: string | null; accountNumber: string | null }>;
+login: (accountNumber: string, password: string) => Promise<string | null>;
 logout: () => void;
 refresh: () => Promise<void>;
 authFetch: (path: string, options?: RequestInit) => Promise<Response>;
@@ -47,14 +47,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function authFetch(path: string, options: RequestInit = {}) {
     const headers = new Headers(options.headers || {});
     if (session?.token) headers.set("authorization", `Bearer ${session.token}`);
-    return fetch(path, { ...options, headers });
+    const res = await fetch(path, { ...options, headers });
+    // 401(セッション無効: トークン失効 or ユーザー消滅)を受けたら、自動でログアウト状態に戻す
+    // →「ログイン中なのに『ログインが必要です』」の矛盾を防ぐ
+    if (res.status === 401 && session?.token) {
+      save(null);
+    }
+    return res;
   }
 
-  async function login(accountNumber: string): Promise<string | null> {
+  async function login(accountNumber: string, password: string): Promise<string | null> {
     const r = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accountNumber }),
+      body: JSON.stringify({ accountNumber, password }),
     });
     const j = await r.json();
     if (!r.ok) return j.error || "ログイン失敗";
@@ -63,8 +69,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   }
 
-  async function createAccount(): Promise<{ error: string | null; accountNumber: string | null }> {
-    const r = await fetch("/api/auth/register", { method: "POST" });
+  async function createAccount(password: string): Promise<{ error: string | null; accountNumber: string | null }> {
+    const r = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
     const j = await r.json();
     if (!r.ok) return { error: j.error || "発行失敗", accountNumber: null };
     save({ token: j.token, accountNumber: j.accountNumber, receiveId: j.receiveId || "", solanaAddress: j.solanaAddress, pending: 0, sent: 0 });

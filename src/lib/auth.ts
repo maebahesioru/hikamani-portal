@@ -3,12 +3,13 @@ import { createHash, randomBytes, scryptSync, timingSafeEqual, randomInt } from 
 import { readJson, writeJson } from "./store";
 
 export interface User {
-  accountNumber: string; // 16桁の数字(ログイン専用の秘密・パスワードとして扱う)
+  accountNumber: string; // 16桁の数字(ログインID・公開しない)
   receiveId: string; // 送受金用の公開ID(6文字・他人に教えてOK)
   salt: string;
   hash: string; // アカウント番号のscryptハッシュ
+  passwordHash: string | null; // パスワードのscryptハッシュ(ハイブリッド認証・null=未設定の旧ユーザー)
   solanaAddress: string; // 自動生成されたHMC受け取りアドレス
-  encryptedPrivateKey: string | null; // 秘密鍵(アカウント番号でAES-256-GCM暗号化)
+  encryptedPrivateKey: string | null; // 秘密鍵(パスワードでAES-256-GCM暗号化)
   airdropReceived: boolean;
   airdropAmount: number;
   createdAt: string;
@@ -31,6 +32,17 @@ export function hashAccountNumber(accountNumber: string, salt: string): string {
 
 export function verifyAccountNumber(accountNumber: string, salt: string, expected: string): boolean {
   const actual = Buffer.from(hashAccountNumber(accountNumber, salt), "hex");
+  const exp = Buffer.from(expected, "hex");
+  return actual.length === exp.length && timingSafeEqual(actual, exp);
+}
+
+// パスワードのハッシュ/検証(ハイブリッド認証用)
+export function hashPassword(password: string, salt: string): string {
+  return scryptSync(password, salt, 64).toString("hex");
+}
+
+export function verifyPassword(password: string, salt: string, expected: string): boolean {
+  const actual = Buffer.from(hashPassword(password, salt), "hex");
   const exp = Buffer.from(expected, "hex");
   return actual.length === exp.length && timingSafeEqual(actual, exp);
 }

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function BaccaratPage() {
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
+    <main className=" px-4 py-8">
       <PageTitle textKey="baccarat" />
       <p className="mt-1 mb-6 text-sm text-zinc-400">
         プレイヤー / バンカー / タイの3択。換金なしのゲーム内ポイント

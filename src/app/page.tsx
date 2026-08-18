@@ -16,7 +16,7 @@ export default function Home() {
     <main className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
       {/* ヘッダー */}
       <header className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/80 dark:bg-zinc-900/60">
-        <div className="mx-auto max-w-4xl px-4 py-6">
+        <div className=" px-4 py-6">
           <h1 className="text-2xl font-bold">
             🥚 Hikamani Coin <span className="text-zinc-600 dark:text-zinc-400">(HMC)</span>
           </h1>
@@ -34,7 +34,7 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-4xl px-4 py-8 space-y-10">
+      <div className=" px-4 py-8 space-y-10">
         {/* アカウント案内 */}
         <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-900/40 p-5">
           <p className="font-semibold">👤 ウォレット(アカウント)</p>

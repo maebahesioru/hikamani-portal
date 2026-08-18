@@ -13,11 +13,13 @@ function maskNum(n: string): string {
 export default function AuthPanel() {
   const { session, createAccount, login, logout, refresh } = useAuth();
   const [inputNum, setInputNum] = useState("");
+  const [inputPw, setInputPw] = useState("");
+  const [newPw, setNewPw] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [newAccount, setNewAccount] = useState<string | null>(null);
   const [showNum, setShowNum] = useState(false);
-  const [expInput, setExpInput] = useState("");
+  const [expPw, setExpPw] = useState("");
   const [exported, setExported] = useState<{ warning: string; privateKeyJson: string } | null>(null);
   const [expMsg, setExpMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -55,13 +57,15 @@ export default function AuthPanel() {
   }
 
   async function doCreate() {
+    if (newPw.length < 8) { setMsg({ ok: false, text: "パスワードは8文字以上にしてください" }); return; }
     setLoading(true);
     setNewAccount(null);
-    const res = await createAccount();
+    const res = await createAccount(newPw);
     if (res.error) { setMsg({ ok: false, text: res.error }); }
     else {
       setMsg({ ok: true, text: "アカウント発行完了! エアドロップ1,000 HMCの対象になりました" });
       setNewAccount(res.accountNumber);
+      setNewPw("");
       await refresh();
     }
     setLoading(false);
@@ -70,30 +74,30 @@ export default function AuthPanel() {
   async function doLogin() {
     const num = inputNum.replace(/\s/g, "");
     if (!/^\d{16}$/.test(num)) { setMsg({ ok: false, text: "16桁の数字を入力してください" }); return; }
+    if (inputPw.length < 1) { setMsg({ ok: false, text: "パスワードを入力してください" }); return; }
     setLoading(true);
-    const err = await login(num);
+    const err = await login(num, inputPw);
     if (err) setMsg({ ok: false, text: err });
-    else { setMsg({ ok: true, text: "ログインしました" }); setInputNum(""); await refresh(); }
+    else { setMsg({ ok: true, text: "ログインしました" }); setInputNum(""); setInputPw(""); await refresh(); }
     setLoading(false);
   }
 
   async function doExport() {
-    const num = expInput.replace(/\s/g, "");
     if (!session) return;
-    if (!/^\d{16}$/.test(num)) { setExpMsg({ ok: false, text: "16桁のアカウント番号を入力してください" }); return; }
+    if (expPw.length < 1) { setExpMsg({ ok: false, text: "パスワードを入力してください" }); return; }
     setExporting(true);
     setExported(null);
     try {
       const r = await fetch("/api/wallet/export", {
         method: "POST",
         headers: { "Content-Type": "application/json", authorization: `Bearer ${session.token}` },
-        body: JSON.stringify({ accountNumber: num }),
+        body: JSON.stringify({ password: expPw }),
       });
       const j = await r.json();
       if (r.ok) {
         setExported({ warning: j.warning, privateKeyJson: j.privateKeyJson });
         setExpMsg({ ok: true, text: "復号成功" });
-        setExpInput("");
+        setExpPw("");
       } else {
         setExpMsg({ ok: false, text: j.error || "エクスポートに失敗しました" });
       }
@@ -111,14 +115,14 @@ export default function AuthPanel() {
             <p className="text-zinc-600 dark:text-zinc-400">ログイン中: <b className="text-emerald-400 font-mono">{showNum ? formatNum(session.accountNumber) : maskNum(session.accountNumber)}</b></p>
             <button
               onClick={() => setShowNum(!showNum)}
-              className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs hover:bg-zinc-200 dark:bg-zinc-800"
+              className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-2 py-1 text-xs hover:bg-zinc-200 dark:hover:bg-zinc-800"
             >
               {showNum ? "🙈 番号を隠す" : "👁 番号を表示"}
             </button>
           </div>
-          <p className="mt-1 text-[10px] text-zinc-600">アカウント番号はパスワードと同じです。画面共有やスクリーンショットに注意してください。</p>
+          <p className="mt-1 text-[10px] text-zinc-600 dark:text-zinc-600">アカウント番号はIDです。パスワードとセットでログインします。画面共有やスクリーンショットに注意してください。</p>
         </div>
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 p-3 text-sm">
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-950/50 p-3 text-sm">
           <p className="text-zinc-600 dark:text-zinc-400">あなたのHMC残高</p>
           <p className="mt-1 text-2xl font-bold text-amber-300">{session.pending.toLocaleString()} HMC</p>
           <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-500">(未送金: {session.pending.toLocaleString()} / 送金済み: {session.sent.toLocaleString()})</p>
@@ -134,17 +138,18 @@ export default function AuthPanel() {
         </div>
 
         {/* 秘密鍵エクスポート */}
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 p-3">
-          <p className="mb-2 text-sm font-semibold text-zinc-800 dark:text-zinc-300">🔑 秘密鍵のエクスポート</p>
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-950/50 p-3">
+          <p className="mb-2 text-sm font-semibold text-zinc-300">🔑 秘密鍵のエクスポート</p>
           <p className="mb-2 text-xs text-zinc-600 dark:text-zinc-500">
-            アカウント番号を入力すると、このウォレットの秘密鍵を取り出せます(Phantom等へのインポート用)。<b className="text-red-400">絶対に他人に見せないでください。</b>
+            パスワードを入力すると、このウォレットの秘密鍵を取り出せます(Phantom等へのインポート用)。<b className="text-red-400">絶対に他人に見せないでください。</b>
           </p>
           <input
-            value={expInput}
-            onChange={(e) => setExpInput(e.target.value)}
+            type="password"
+            value={expPw}
+            onChange={(e) => setExpPw(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && doExport()}
-            placeholder="16桁のアカウント番号"
-            className="mb-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-amber-500"
+            placeholder="パスワード"
+            className="mb-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-amber-500"
           />
           <button
             onClick={doExport}
@@ -164,7 +169,7 @@ export default function AuthPanel() {
               />
               <button
                 onClick={() => navigator.clipboard.writeText(exported.privateKeyJson)}
-                className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-xs hover:bg-zinc-200 dark:bg-zinc-800"
+                className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-1 text-xs hover:bg-zinc-200 dark:hover:bg-zinc-800"
               >
                 コピーする
               </button>
@@ -176,7 +181,7 @@ export default function AuthPanel() {
         {/* 送金 */}
         <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-950/50 p-3">
           <p className="mb-2 text-sm font-semibold text-zinc-300">💸 HMCを送金</p>
-          <p className="mb-2 text-xs text-zinc-500">相手の<b className="text-sky-300">受取ID(6文字)</b>を入力して送金。アカウント番号(16桁)は使わないでください(番号はあなたのパスワードです)。</p>
+          <p className="mb-2 text-xs text-zinc-600 dark:text-zinc-500">相手の<b className="text-sky-300">受取ID(6文字)</b>を入力して送金。アカウント番号(16桁)は使わないでください(番号はあなたのIDです)。</p>
           <input
             value={toInput}
             onChange={(e) => setToInput(e.target.value)}
@@ -190,7 +195,7 @@ export default function AuthPanel() {
               value={amountInput}
               onChange={(e) => setAmountInput(e.target.value)}
               placeholder="数量(HMC)"
-              className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
+              className="flex-1 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
             />
             <button
               onClick={doTransfer}
@@ -203,7 +208,7 @@ export default function AuthPanel() {
           {txMsg && <p className={`mt-2 text-xs ${txMsg.ok ? "text-emerald-400" : "text-red-400"}`}>{txMsg.text}</p>}
         </div>
 
-        <button onClick={() => { if (confirm("ログアウトしますか?")) logout(); }} className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-200 dark:bg-zinc-800">
+        <button onClick={() => { if (confirm("ログアウトしますか?")) logout(); }} className="rounded-lg border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-200 dark:hover:bg-zinc-800">
           ログアウト
         </button>
       </div>
@@ -215,9 +220,16 @@ export default function AuthPanel() {
       {/* 新規発行 */}
       <div className="rounded-lg border border-sky-900 bg-sky-950/20 p-4">
         <p className="mb-2 text-sm font-semibold text-sky-300">🆕 アカウント番号を発行する</p>
-        <p className="mb-3 text-xs text-zinc-600 dark:text-zinc-500">
-          メールもパスワードも不要。ボタン1つで16桁の番号が発行されます(登録でエアドロップ1,000 HMCの対象)
+        <p className="mb-3 text-xs text-zinc-500">
+          16桁のアカウント番号(ログインID)+パスワードを設定。登録でエアドロップ1,000 HMCの対象
         </p>
+        <input
+          type="password"
+          value={newPw}
+          onChange={(e) => setNewPw(e.target.value)}
+          placeholder="パスワード(8文字以上)"
+          className="mb-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
+        />
         <button
           onClick={doCreate}
           disabled={loading}
@@ -227,11 +239,11 @@ export default function AuthPanel() {
         </button>
         {newAccount && (
           <div className="mt-3 rounded-lg border border-amber-700 bg-amber-950/30 p-3">
-            <p className="text-xs text-red-300 font-bold">⚠️ この番号があなたのアカウントです。失くすと復旧できません。必ずメモしてください!</p>
+            <p className="text-xs text-red-300 font-bold">⚠️ この番号があなたのアカウントIDです。失くすと復旧できません。必ずメモしてください!</p>
             <p className="mt-2 text-center font-mono text-2xl font-bold tracking-wider text-amber-300">{formatNum(newAccount)}</p>
             <button
               onClick={() => navigator.clipboard.writeText(newAccount)}
-              className="mt-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-xs hover:bg-zinc-200 dark:bg-zinc-800"
+              className="mt-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-xs hover:bg-zinc-200 dark:hover:bg-zinc-800"
             >
               番号をコピー
             </button>
@@ -240,14 +252,22 @@ export default function AuthPanel() {
       </div>
 
       {/* ログイン */}
-      <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100/80 dark:bg-zinc-900/60 p-4">
-        <p className="mb-2 text-sm font-semibold">🔓 アカウント番号でログイン</p>
+      <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-900/60 p-4">
+        <p className="mb-2 text-sm font-semibold">🔓 アカウント番号+パスワードでログイン</p>
         <input
           value={inputNum}
           onChange={(e) => setInputNum(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && doLogin()}
           placeholder="1234 5678 9012 3456"
-          className="mb-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
+          className="mb-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
+        />
+        <input
+          type="password"
+          value={inputPw}
+          onChange={(e) => setInputPw(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && doLogin()}
+          placeholder="パスワード"
+          className="mb-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
         />
         <button
           onClick={doLogin}

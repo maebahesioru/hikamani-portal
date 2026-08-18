@@ -17,7 +17,7 @@ export default function NavBar() {
   const { t, lang, setLang } = useLang();
   return (
     <nav className="sticky top-0 z-50 border-b border-zinc-200 bg-zinc-100/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
-      <div className="mx-auto flex max-w-4xl items-center gap-1 overflow-x-auto px-4 py-2">
+      <div className="flex items-center gap-1 overflow-x-auto px-4 py-2">
         {NAV.map((n) => (
           <Link
             key={n.href}

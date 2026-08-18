@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function AccountPage() {
   return (
-    <main className="mx-auto max-w-xl px-4 py-8">
+    <main className=" px-4 py-8">
       <PageTitle textKey="account" />
       <p className="mt-1 mb-6 text-sm text-zinc-400">
         16桁のアカウント番号で完結。メールもパスワードも不要

@@ -1,12 +1,13 @@
-// ログイン(16桁のアカウント番号のみ)
+// ログイン(16桁のアカウント番号+パスワードのハイブリッド認証)
 import { NextRequest, NextResponse } from "next/server";
-import { getUsers, saveUsers, verifyAccountNumber, createSessionToken, generateReceiveId, checkLock, recordFailure, User } from "@/lib/auth";
+import { getUsers, saveUsers, verifyAccountNumber, verifyPassword, createSessionToken, generateReceiveId, checkLock, recordFailure, User } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const accountNumber = String(body?.accountNumber || "").replace(/\s/g, "");
+  const password = String(body?.password || "");
 
   if (!/^\d{16}$/.test(accountNumber)) {
     return NextResponse.json({ error: "アカウント番号は16桁の数字で入力してください" }, { status: 400 });
@@ -24,10 +25,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: lockMsg }, { status: 429 });
   }
 
+  // ハイブリッド: 番号(hash)とパスワード(hash)の両方を検証
   if (!verifyAccountNumber(accountNumber, user.salt, user.hash)) {
     recordFailure(user);
     saveUsers(users);
     return NextResponse.json({ error: "アカウント番号が違います" }, { status: 401 });
+  }
+  if (!user.passwordHash) {
+    recordFailure(user);
+    saveUsers(users);
+    return NextResponse.json({ error: "このアカウントはパスワード未設定の旧タイプです。新しくアカウントを作り直してください" }, { status: 401 });
+  }
+  if (!verifyPassword(password, user.salt, user.passwordHash)) {
+    recordFailure(user);
+    saveUsers(users);
+    return NextResponse.json({ error: "パスワードが違います" }, { status: 401 });
   }
 
   user.failCount = 0;
