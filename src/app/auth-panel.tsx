@@ -27,12 +27,12 @@ export default function AuthPanel() {
   const [transferring, setTransferring] = useState(false);
 
   async function doTransfer() {
-    const to = toInput.replace(/\s/g, "");
+    const to = toInput.replace(/\s/g, "").toLowerCase();
     const amount = Math.floor(Number(amountInput) || 0);
     if (!session) return;
-    if (!/^\d{16}$/.test(to)) { setTxMsg({ ok: false, text: "送金先は16桁のアカウント番号です" }); return; }
+    if (!/^[a-z0-9]{6}$/.test(to)) { setTxMsg({ ok: false, text: "送金先は受取ID(6文字の英数字)です" }); return; }
     if (amount < 1) { setTxMsg({ ok: false, text: "送金額を入力してください(1 HMC以上)" }); return; }
-    if (!confirm(`${amount} HMC を ${to.slice(0,4)} ${to.slice(4,8)} ${to.slice(8,12)} ${to.slice(12)} に送金しますか?`)) return;
+    if (!confirm(`${amount} HMC を 受取ID「${to}」に送金しますか?`)) return;
     setTransferring(true);
     try {
       const r = await fetch("/api/transfer", {
@@ -123,7 +123,12 @@ export default function AuthPanel() {
           <p className="mt-1 text-2xl font-bold text-amber-300">{session.pending.toLocaleString()} HMC</p>
           <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-500">(未送金: {session.pending.toLocaleString()} / 送金済み: {session.sent.toLocaleString()})</p>
         </div>
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 p-3 text-sm">
+        <div className="rounded-lg border border-sky-900 bg-sky-950/20 p-3 text-sm">
+          <p className="text-zinc-400">📨 あなたの受取ID(送金してもらう用・他人に教えてOK)</p>
+          <p className="mt-1 font-mono text-2xl font-bold tracking-widest text-sky-300">{session.receiveId}</p>
+          <p className="mt-1 text-[10px] text-zinc-500">送金相手にはこの受取IDを伝えてください。アカウント番号(16桁)は絶対に教えないでください。</p>
+        </div>
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-950/50 p-3 text-sm">
           <p className="text-zinc-600 dark:text-zinc-400">あなたの受け取りアドレス(将来のチェーン送金先)</p>
           <p className="mt-1 font-mono text-xs text-sky-300 break-all">{session.solanaAddress}</p>
         </div>
@@ -169,14 +174,14 @@ export default function AuthPanel() {
         </div>
 
         {/* 送金 */}
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 p-3">
-          <p className="mb-2 text-sm font-semibold text-zinc-800 dark:text-zinc-300">💸 HMCを送金</p>
-          <p className="mb-2 text-xs text-zinc-600 dark:text-zinc-500">サイト内のアカウント番号(16桁)にポイントを送れます。チェーン送金は運営が定期的に実施します。</p>
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-950/50 p-3">
+          <p className="mb-2 text-sm font-semibold text-zinc-300">💸 HMCを送金</p>
+          <p className="mb-2 text-xs text-zinc-500">相手の<b className="text-sky-300">受取ID(6文字)</b>を入力して送金。アカウント番号(16桁)は使わないでください(番号はあなたのパスワードです)。</p>
           <input
             value={toInput}
             onChange={(e) => setToInput(e.target.value)}
-            placeholder="送金先の16桁のアカウント番号"
-            className="mb-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
+            placeholder="送信先の受取ID(例: ab12cd)"
+            className="mb-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
           />
           <div className="flex gap-2">
             <input

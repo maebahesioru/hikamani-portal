@@ -6,6 +6,7 @@ const KEY = "hmc_session";
 interface Session {
   token: string;
   accountNumber: string;
+  receiveId: string;
   solanaAddress: string;
   pending: number;
   sent: number;
@@ -57,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const j = await r.json();
     if (!r.ok) return j.error || "ログイン失敗";
-    save({ token: j.token, accountNumber: j.accountNumber, solanaAddress: j.solanaAddress, pending: 0, sent: 0 });
+    save({ token: j.token, accountNumber: j.accountNumber, receiveId: j.receiveId || "", solanaAddress: j.solanaAddress, pending: 0, sent: 0 });
     await refresh();
     return null;
   }
@@ -66,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const r = await fetch("/api/auth/register", { method: "POST" });
     const j = await r.json();
     if (!r.ok) return { error: j.error || "発行失敗", accountNumber: null };
-    save({ token: j.token, accountNumber: j.accountNumber, solanaAddress: j.solanaAddress, pending: 0, sent: 0 });
+    save({ token: j.token, accountNumber: j.accountNumber, receiveId: j.receiveId || "", solanaAddress: j.solanaAddress, pending: 0, sent: 0 });
     await refresh();
     return { error: null, accountNumber: j.accountNumber };
   }
@@ -76,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const r = await authFetch("/api/state");
     if (r.ok) {
       const j = await r.json();
-      setSession((s) => s ? { ...s, pending: j.wallet?.pending ?? s.pending, sent: j.wallet?.sent ?? s.sent } : s);
+      setSession((s) => s ? { ...s, receiveId: j.user?.receiveId ?? s.receiveId, pending: j.wallet?.pending ?? s.pending, sent: j.wallet?.sent ?? s.sent } : s);
     }
   }
 

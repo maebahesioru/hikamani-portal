@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { Keypair } from "@solana/web3.js";
-import { getUsers, saveUsers, hashAccountNumber, createSessionToken, generateAccountNumber, formatAccountNumber, User } from "@/lib/auth";
+import { getUsers, saveUsers, hashAccountNumber, createSessionToken, generateAccountNumber, generateReceiveId, formatAccountNumber, User } from "@/lib/auth";
 import { readJson, writeJson, PointEntry } from "@/lib/store";
 import { encryptPrivateKey } from "@/lib/crypto-keys";
 
@@ -18,12 +18,20 @@ export async function POST(req: NextRequest) {
     accountNumber = generateAccountNumber();
   } while (users[accountNumber]);
 
+  // 受取IDも既存と衝突しないものに
+  let receiveId = "";
+  const existing = new Set(Object.values(users).map((u) => u.receiveId));
+  do {
+    receiveId = generateReceiveId();
+  } while (existing.has(receiveId));
+
   const kp = Keypair.generate();
   const salt = randomBytes(16).toString("hex");
   const token = createSessionToken();
 
   const user: User = {
     accountNumber,
+    receiveId,
     salt,
     hash: hashAccountNumber(accountNumber, salt),
     solanaAddress: kp.publicKey.toBase58(),
@@ -49,6 +57,7 @@ export async function POST(req: NextRequest) {
     ok: true,
     token,
     accountNumber,
+    receiveId,
     accountNumberDisplay: formatAccountNumber(accountNumber),
     solanaAddress: kp.publicKey.toBase58(),
     airdropAmount: AIRDROP_AMOUNT,

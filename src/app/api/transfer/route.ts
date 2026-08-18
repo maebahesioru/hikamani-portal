@@ -1,6 +1,6 @@
 // サイト内送金(アカウント間でHMCポイントを送る)
 import { NextRequest, NextResponse } from "next/server";
-import { userFromRequest } from "@/lib/auth";
+import { userFromRequest, getUsers, saveUsers, checkLock, recordFailure } from "@/lib/auth";
 import { readJson, writeJson, PointEntry } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -18,24 +18,30 @@ export async function POST(req: NextRequest) {
   const user = userFromRequest(req.headers.get("authorization"));
   if (!user) return NextResponse.json({ error: "ログインが必要です" }, { status: 401 });
 
+  // レート制限: 送金先の当たり判定に悪用されないよう、不正リクエストもカウントしてロック
+  const users = getUsers();
+  const lockMsg = checkLock(user);
+  if (lockMsg) return NextResponse.json({ error: lockMsg }, { status: 429 });
+
   const body = await req.json().catch(() => null);
-  const to = String(body?.to || "").replace(/\s/g, "");
+  const to = String(body?.to || "").replace(/\s/g, "").toLowerCase();
   const amount = Math.floor(Number(body?.amount || 0));
 
-  if (!/^\d{16}$/.test(to)) {
-    return NextResponse.json({ error: "送金先は16桁のアカウント番号で入力してください" }, { status: 400 });
-  }
-  if (to === user.accountNumber) {
-    return NextResponse.json({ error: "自分自身への送金はできません" }, { status: 400 });
-  }
-  if (amount < MIN_TRANSFER) {
-    return NextResponse.json({ error: `最低送金額は ${MIN_TRANSFER} HMCです` }, { status: 400 });
+  // 送金先は「受取ID(6文字の公開ID)」で指定する(アカウント番号=パスワードは絶対に教え合わない)
+  if (!/^[a-z0-9]{6}$/.test(to) || amount < MIN_TRANSFER) {
+    recordFailure(user);
+    saveUsers(users);
+    return NextResponse.json({ error: "送金に失敗しました" }, { status: 400 });
   }
 
-  const users = readJson<Record<string, any>>("users.json", {});
-  if (!users[to]) {
-    return NextResponse.json({ error: "送金先のアカウントが見つかりません(16桁のアカウント番号を確認してください)" }, { status: 404 });
+  // 受取IDから宛先ユーザーを解決(存在しないIDも同じ文言で拒否・有効性を推測させない)
+  const target = Object.values(users).find((u) => u.receiveId === to);
+  if (!target || target.accountNumber === user.accountNumber) {
+    recordFailure(user);
+    saveUsers(users);
+    return NextResponse.json({ error: "送金に失敗しました" }, { status: 400 });
   }
+  const toAccount = target.accountNumber;
 
   const points = readJson<Record<string, PointEntry>>("points.json", {});
   const from = points[user.accountNumber] || { address: user.solanaAddress, pending: 0, sent: 0, updatedAt: "" };
@@ -47,15 +53,20 @@ export async function POST(req: NextRequest) {
   from.updatedAt = new Date().toISOString();
   points[user.accountNumber] = from;
 
-  const toPoint = points[to] || { address: users[to].solanaAddress, pending: 0, sent: 0, updatedAt: "" };
+  const toPoint = points[toAccount] || { address: target.solanaAddress, pending: 0, sent: 0, updatedAt: "" };
   toPoint.pending += amount;
   toPoint.updatedAt = new Date().toISOString();
-  points[to] = toPoint;
+  points[toAccount] = toPoint;
   writeJson("points.json", points);
 
   const transfers = readJson<TransferEntry[]>("transfers.json", []);
-  transfers.push({ from: user.accountNumber, to, amount, at: new Date().toISOString() });
+  transfers.push({ from: user.accountNumber, to: toAccount, amount, at: new Date().toISOString() });
   writeJson("transfers.json", transfers);
 
-  return NextResponse.json({ ok: true, to, amount, pending: from.pending });
+  // 成功時は失敗カウントをリセット
+  user.failCount = 0;
+  user.lockUntil = null;
+  saveUsers(users);
+
+  return NextResponse.json({ ok: true, to: toAccount, receiveId: to, amount, pending: from.pending });
 }

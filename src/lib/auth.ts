@@ -3,7 +3,8 @@ import { createHash, randomBytes, scryptSync, timingSafeEqual, randomInt } from 
 import { readJson, writeJson } from "./store";
 
 export interface User {
-  accountNumber: string; // 16桁の数字(ユーザー名兼パスワード)
+  accountNumber: string; // 16桁の数字(ログイン専用の秘密・パスワードとして扱う)
+  receiveId: string; // 送受金用の公開ID(6文字・他人に教えてOK)
   salt: string;
   hash: string; // アカウント番号のscryptハッシュ
   solanaAddress: string; // 自動生成されたHMC受け取りアドレス
@@ -14,6 +15,14 @@ export interface User {
   sessionToken: string | null;
   failCount: number; // ログイン失敗回数(レート制限用)
   lockUntil: number | null; // ロック解除時刻(epoch ms)
+}
+
+// 受取ID生成(6文字・英数字小文字・送金先の指定に使う公開識別子)
+export function generateReceiveId(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let s = "";
+  for (let i = 0; i < 6; i++) s += chars[randomInt(0, chars.length)];
+  return s;
 }
 
 export function hashAccountNumber(accountNumber: string, salt: string): string {

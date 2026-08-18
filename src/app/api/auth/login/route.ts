@@ -1,6 +1,6 @@
 // ログイン(16桁のアカウント番号のみ)
 import { NextRequest, NextResponse } from "next/server";
-import { getUsers, saveUsers, verifyAccountNumber, createSessionToken, checkLock, recordFailure, User } from "@/lib/auth";
+import { getUsers, saveUsers, verifyAccountNumber, createSessionToken, generateReceiveId, checkLock, recordFailure, User } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -32,9 +32,16 @@ export async function POST(req: NextRequest) {
 
   user.failCount = 0;
   user.lockUntil = null;
+  // 既存ユーザーに受取IDが無ければ生成して付与
+  if (!user.receiveId) {
+    const existing = new Set(Object.values(users).map((u) => u.receiveId));
+    let rid = "";
+    do { rid = generateReceiveId(); } while (existing.has(rid));
+    user.receiveId = rid;
+  }
   const token = createSessionToken();
   user.sessionToken = token;
   saveUsers(users);
 
-  return NextResponse.json({ ok: true, token, accountNumber, solanaAddress: user.solanaAddress });
+  return NextResponse.json({ ok: true, token, accountNumber, receiveId: user.receiveId, solanaAddress: user.solanaAddress });
 }
