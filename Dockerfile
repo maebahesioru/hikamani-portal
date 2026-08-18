@@ -1,7 +1,8 @@
 FROM node:22-alpine AS base
 
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# libc6-compat(動作互換)+python3/make/g++(bigint-buffer等ネイティブビルド用・2026-08-18実証)
+RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # dangerouslyAllowAllBuilds: pnpm 11.2.2でonlyBuiltDependenciesが効かずunrs-resolverがブロックされる問題の回避(2026-08-17実証)
