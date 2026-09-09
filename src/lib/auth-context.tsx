@@ -14,7 +14,7 @@ interface Session {
 
 const AuthContext = createContext<{
 session: Session | null;
-createAccount: (password: string, captchaToken?: string) => Promise<{ error: string | null; accountNumber: string | null }>;
+createAccount: (password: string) => Promise<{ error: string | null; accountNumber: string | null }>;
 login: (accountNumber: string, password: string) => Promise<string | null>;
 logout: () => void;
 refresh: () => Promise<void>;
@@ -69,11 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   }
 
-  async function createAccount(password: string, captchaToken?: string): Promise<{ error: string | null; accountNumber: string | null }> {
+  async function createAccount(password: string): Promise<{ error: string | null; accountNumber: string | null }> {
     const r = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password, captchaToken }),
+      body: JSON.stringify({ password }),
     });
     const j = await r.json();
     if (!r.ok) return { error: j.error || "発行失敗", accountNumber: null };

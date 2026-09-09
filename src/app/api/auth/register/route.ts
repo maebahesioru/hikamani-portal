@@ -5,7 +5,6 @@ import { Keypair } from "@solana/web3.js";
 import { getUsers, saveUsers, hashAccountNumber, hashPassword, createSessionToken, generateAccountNumber, generateReceiveId, formatAccountNumber, User } from "@/lib/auth";
 import { readJson, writeJson, PointEntry } from "@/lib/store";
 import { encryptPrivateKey } from "@/lib/crypto-keys";
-import { consumeSolveToken, clientIp } from "@/lib/captcha";
 
 export const dynamic = "force-dynamic";
 
@@ -17,16 +16,6 @@ export async function POST(req: NextRequest) {
   // パスワードは8文字以上を必須(番号+パスワードのハイブリッド認証)
   if (password.length < 8) {
     return NextResponse.json({ error: "パスワードは8文字以上にしてください" }, { status: 400 });
-  }
-
-  // ヒカマニCAPTCHA(画像選択式)の解決トークン必須(ボット量産抑止)
-  const captchaToken = String(body?.captchaToken || "");
-  const ip = clientIp(req);
-  if (!consumeSolveToken(captchaToken, ip)) {
-    return NextResponse.json(
-      { error: "ロボット確認(ヒカマニCAPTCHA)を通過してください。画像認証の期限が切れた場合はやり直してください" },
-      { status: 400 }
-    );
   }
 
   // 既存の番号と衝突しない16桁を生成(ほぼ起きないが念のため)

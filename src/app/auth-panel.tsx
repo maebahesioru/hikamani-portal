@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import HikabooruCaptcha from "./captcha-box";
 
 function formatNum(n: string): string {
   return n.replace(/(\d{4})(?=\d)/g, "$1 ");
@@ -19,9 +18,6 @@ export default function AuthPanel() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [newAccount, setNewAccount] = useState<string | null>(null);
-  // ヒカマニCAPTCHA(画像選択式)の解決トークン
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [captchaKey, setCaptchaKey] = useState(0); // 登録成功/失敗時にCAPTCHAを作り直す用
   const [showNum, setShowNum] = useState(false);
   const [expPw, setExpPw] = useState("");
   const [exported, setExported] = useState<{ warning: string; privateKeyJson: string } | null>(null);
@@ -62,22 +58,14 @@ export default function AuthPanel() {
 
   async function doCreate() {
     if (newPw.length < 8) { setMsg({ ok: false, text: "パスワードは8文字以上にしてください" }); return; }
-    if (!captchaToken) { setMsg({ ok: false, text: "ロボット確認(画像認証)に答えてください" }); return; }
     setLoading(true);
     setNewAccount(null);
-    const res = await createAccount(newPw, captchaToken);
-    if (res.error) {
-      setMsg({ ok: false, text: res.error });
-      // 画像認証トークンはワンタイム。失敗(期限切れ等)したら新しい問題に張り替える
-      setCaptchaToken(null);
-      setCaptchaKey((k) => k + 1);
-    }
+    const res = await createAccount(newPw);
+    if (res.error) { setMsg({ ok: false, text: res.error }); }
     else {
       setMsg({ ok: true, text: "アカウント発行完了! エアドロップ1,000 HMCの対象になりました" });
       setNewAccount(res.accountNumber);
       setNewPw("");
-      setCaptchaToken(null);
-      setCaptchaKey((k) => k + 1);
       await refresh();
     }
     setLoading(false);
@@ -242,8 +230,6 @@ export default function AuthPanel() {
           placeholder="パスワード(8文字以上)"
           className="mb-2 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 font-mono text-sm outline-none focus:border-sky-500"
         />
-        {/* 画像選択式CAPTCHA(hikabooruのタグ付き画像で出題) */}
-        <HikabooruCaptcha key={captchaKey} onSolved={(t) => setCaptchaToken(t)} />
         <button
           onClick={doCreate}
           disabled={loading}
